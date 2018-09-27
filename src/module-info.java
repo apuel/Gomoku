@@ -1,9 +1,0 @@
-/**
- * 
- */
-/**
- * @author ruby
- *
- */
-module gomoku {
-}
