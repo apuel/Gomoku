@@ -1,0 +1,9 @@
+/**
+ * 
+ */
+/**
+ * @author ruby
+ *
+ */
+module gomoku {
+}
