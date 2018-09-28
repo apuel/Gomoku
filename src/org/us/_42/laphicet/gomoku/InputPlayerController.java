@@ -4,23 +4,27 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class InputPlayerController implements PlayerController {
-	Scanner scanner = new Scanner(System.in);
+	private static final Scanner scanner = new Scanner(System.in);
+	private int id = 1;
 	
 	@Override
 	public String Name() {
-		return ("User");
+		return ("User " + this.id);
 	}
 	
 	@Override
 	public void Report(String message) {
 		System.err.println(message);
+		System.err.flush();
 	}
 	
 	@Override
 	public void GetMove(GameController game, byte piece, int[] coords) {
+		this.id = piece;
+		
+		System.out.print("Next move ('x y'): ");
 		try {
-			System.out.print("Next move ('x y'): ");
-			String input = this.scanner.nextLine();
+			String input = scanner.nextLine();
 			String[] inputs = input.split(" ");
 			if (inputs.length != 2) {
 				coords[0] = -1;

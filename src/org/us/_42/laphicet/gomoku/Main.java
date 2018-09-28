@@ -3,7 +3,8 @@ package org.us._42.laphicet.gomoku;
 public class Main {
 	public static void main(String... args) {
 		PlayerController player = new InputPlayerController();
-		GameController game = new GameController(player, player);
+		GameStateReporter reporter = new ConsoleStateReporter();
+		GameController game = new GameController(reporter, player, player);
 		game.StartGame();
 	}
 }

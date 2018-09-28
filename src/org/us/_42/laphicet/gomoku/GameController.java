@@ -57,7 +57,7 @@ public class GameController {
 	public int GetPiece(int x, int y) {
 		if (x < 0 || x >= BOARD_LENGTH || y < 0 || y >= BOARD_LENGTH)
 			return (-1);
-		return (board[x][y]);
+		return (this.board[y][x]);
 	}
 	
 	/**
@@ -69,15 +69,16 @@ public class GameController {
 	 * @return Whether or not the move is valid.
 	 */
 	private boolean ValidateMove(int x, int y, int piece) {
+		PlayerController player = this.players[this.current];
 		int position = GetPiece(x, y);
 		
 		if (position < 0) {
-			players[this.current].Report("Coordinates not in bounds!");
+			player.Report("Coordinates not in bounds!");
 			return (false);
 		}
 		
 		if (position != 0) {
-			players[this.current].Report("There is already a piece in that position!");
+			player.Report("There is already a piece in that position!");
 			return (false);
 		}
 		
@@ -91,16 +92,27 @@ public class GameController {
 		int[] coords = new int[2];
 		
 		while (this.winner == 0) {
-			this.players[this.current].GetMove(this, (byte)(this.current + 1), coords);
-			if (!this.ValidateMove(coords[0], coords[1], (byte)(this.current + 1)))
+			PlayerController player = this.players[this.current];
+			byte value = (byte)(this.current + 1);
+			int captures = this.captures[this.current];
+			
+			player.GetMove(this, value, coords);
+			if (!this.ValidateMove(coords[0], coords[1], value))
 				continue;
 			
-			//TEMP
-			board[coords[0]][coords[1]] = (byte)(this.current + 1);
-			this.reports.add(String.format("%s placed a piece at %d, %d.", this.players[this.current].Name(), coords[0], coords[1]));
+			int x = coords[0];
+			int y = coords[1];
+			
+			this.board[y][x] = value;
+			this.reports.add(String.format("%s placed a piece at %d, %d.", player.Name(), x, y));
+			
+			if (captures >= CAPTURES_TO_WIN) {
+				this.winner = value;
+				this.reports.add(String.format("%s has captured %d times!", player.Name(), captures));
+			}
 			
 			if (this.reporter != null) {
-				this.reporter.ReportTurn(this, coords[0], coords[1], (byte)(this.current + 1), this.reports);
+				this.reporter.ReportTurn(this, x, y, value, this.reports);
 			}
 			this.reports.clear();
 			
