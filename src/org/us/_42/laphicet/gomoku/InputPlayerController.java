@@ -7,6 +7,11 @@ public class InputPlayerController implements PlayerController {
 	Scanner scanner = new Scanner(System.in);
 	
 	@Override
+	public String Name() {
+		return ("User");
+	}
+	
+	@Override
 	public void Report(String message) {
 		System.err.println(message);
 	}
