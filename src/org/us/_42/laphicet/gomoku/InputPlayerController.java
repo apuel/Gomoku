@@ -3,7 +3,7 @@ package org.us._42.laphicet.gomoku;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
-public class InputPlayer implements PlayerController {
+public class InputPlayerController implements PlayerController {
 	Scanner scanner = new Scanner(System.in);
 	
 	@Override
@@ -14,7 +14,7 @@ public class InputPlayer implements PlayerController {
 	@Override
 	public void GetMove(GameController game, byte piece, int[] coords) {
 		try {
-			System.out.println("Next move ('x y'): ");
+			System.out.print("Next move ('x y'): ");
 			String input = this.scanner.nextLine();
 			String[] inputs = input.split(" ");
 			if (inputs.length != 2) {

@@ -18,6 +18,9 @@ public class GameController {
 		}
 		
 		for (int i = 0; i < PLAYER_COUNT; i++) {
+			if (players[i] == null) {
+				throw new IllegalArgumentException("Player may not be null!");
+			}
 			this.players[i] = players[i];
 		}
 	}
@@ -29,12 +32,14 @@ public class GameController {
 	}
 	
 	private boolean ValidateMove(int x, int y) {
-		if (x < 0 || x >= BOARD_LENGTH || y < 0 || y >= BOARD_LENGTH) {
+		int piece = GetPiece(x, y);
+		
+		if (piece < 0) {
 			players[this.current].Report("Coordinates not in bounds!");
 			return (false);
 		}
 		
-		if (board[x][y] != 0) {
+		if (piece != 0) {
 			players[this.current].Report("There is already a piece in that position!");
 			return (false);
 		}
