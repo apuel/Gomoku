@@ -4,7 +4,7 @@ import java.util.Collection;
 
 public interface GameStateReporter {
 	/**
-	 *  A handler for the placed piece and the events that occurred on the last given turn.
+	 * Handles a placed piece and other events that occurred on a given turn.
 	 * 
 	 * @param game The Gomoku game controller including the game board.
 	 * @param x The x coordinate of the placed piece.
