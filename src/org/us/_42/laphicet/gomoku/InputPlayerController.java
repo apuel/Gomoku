@@ -19,6 +19,9 @@ public class InputPlayerController implements PlayerController {
 	}
 	
 	@Override
+	public void InformTurn(int x, int y, byte value) { }
+	
+	@Override
 	public void GetMove(GameController game, byte piece, int[] coords) {
 		this.id = piece;
 		
@@ -26,19 +29,14 @@ public class InputPlayerController implements PlayerController {
 		try {
 			String input = scanner.nextLine();
 			String[] inputs = input.split(" ");
-			if (inputs.length != 2) {
-				coords[0] = -1;
-				coords[1] = -1;
-			}
-			else {
+			if (inputs.length >= 2) {
 				try {
-					coords[0] = Integer.parseInt(inputs[0]);
-					coords[1] = Integer.parseInt(inputs[1]);
+					int x = Integer.parseInt(inputs[0]);
+					int y = Integer.parseInt(inputs[1]);
+					coords[0] = x;
+					coords[1] = y;
 				}
-				catch (NumberFormatException e) {
-					coords[0] = -1;
-					coords[1] = -1;
-				}
+				catch (NumberFormatException e) { }
 			}
 		}
 		catch (NoSuchElementException | IllegalStateException e) {

@@ -82,6 +82,12 @@ public class GameController {
 			return (false);
 		}
 		
+		//Check whether or not this move would place the piece in a state of capture
+		//Check whether or not this move creates a double three
+		//If so, check for possible captures made by this move
+		//If none, this move is not allowed to create a double three
+		//Check if there is 5 in a row somewhere on the board, if so this move MUST counter it
+		
 		return (true);
 	}
 	
@@ -96,6 +102,7 @@ public class GameController {
 			byte value = (byte)(this.current + 1);
 			int captures = this.captures[this.current];
 			
+			coords[0] = -1; coords[1] = -1;
 			player.GetMove(this, value, coords);
 			if (!this.ValidateMove(coords[0], coords[1], value))
 				continue;
@@ -106,15 +113,24 @@ public class GameController {
 			this.board[y][x] = value;
 			this.reports.add(String.format("%s placed a piece at %d, %d.", player.Name(), x, y));
 			
+			//Apply captures
+			
 			if (captures >= CAPTURES_TO_WIN) {
 				this.winner = value;
 				this.reports.add(String.format("%s has captured %d times!", player.Name(), captures));
 			}
 			
+			//If there is 5 in a row, check if it is possible to break it within the next turn
+			//If not, flag the player as a winner
+			
 			if (this.reporter != null) {
 				this.reporter.ReportTurn(this, x, y, value, this.reports);
 			}
 			this.reports.clear();
+			
+			for (PlayerController p : this.players) {
+				p.InformTurn(x, y, value);
+			}
 			
 			this.current = (byte)((this.current + 1) % PLAYER_COUNT);
 		}

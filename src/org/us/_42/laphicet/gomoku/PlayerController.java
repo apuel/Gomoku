@@ -16,6 +16,15 @@ public interface PlayerController {
 	public void Report(String message);
 	
 	/**
+	 * Informs the player that a piece has been placed.
+	 * 
+	 * @param x The x coordinate on the game board.
+	 * @param y The y coordinate on the game board.
+	 * @param value The value of the piece.
+	 */
+	public void InformTurn(int x, int y, byte value);
+	
+	/**
 	 * Returns a move to be played on the given Gomoku game board.
 	 * 
 	 * @param game The game controller for the game.
