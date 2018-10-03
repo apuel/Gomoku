@@ -20,6 +20,6 @@ A GUI is required as well for users to be able to play Gomoku. We are required t
 
 There were no language constraints so we chosed to write this in Java using lwjgl for the visualizer/GUI. We also chose to use Java for a special bonus mode.
   
-  Collabortaion Members:
+  Collaboration Members:
   - apuel https://github.com/apuel
   - Lunairi https://github.com/Lunairi
