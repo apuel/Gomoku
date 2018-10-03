@@ -45,6 +45,7 @@ public class Visualizer {
 	 */
 	private GLFWKeyCallback keyCallback;
 	private long window;
+	private boolean mousePressed = false;
 
 	/**
 	 * This is the start of the visualizer, it will first call:
@@ -124,8 +125,6 @@ public class Visualizer {
 		glfwShowWindow(window);
 	}
 	
-	boolean held = false;
-	
 	/**
 	 * This scans for user inputs. It uses the extended @GomokuKeyCallBack.isKeyDown() 
 	 * to see what key is pressed and if it matches the key macro passed in.
@@ -140,13 +139,13 @@ public class Visualizer {
     private void scan(){
     	if (GomokuKeyCallBack.isKeyDown(GLFW_KEY_ESCAPE))
     		glfwSetWindowShouldClose(window, true);
-    	if (!held && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+    	if (!mousePressed && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
     		glfwGetCursorPos(window, mouseX, mouseY);
     		System.out.println("X: " + mouseX.get(0) + " Y: " + mouseY.get(0));
-    		held = true;
+    		mousePressed = true;
     	}
-    	if (held && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
-    		held = false;
+    	if (mousePressed && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+    		mousePressed = false;
     	}
     }
 	
