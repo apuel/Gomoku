@@ -148,17 +148,6 @@ public class Visualizer {
     		mousePressed = false;
     	}
     }
-	
-    /**
-     * Will clear the screen using @glClearColor with values passed in
-     * @param r = red value
-     * @param b = blue value
-     * @param g = green value
-     * @param t = transparency/opacity value
-     */
-    private void clearScreen(float r, float b, float g, float t) {
-    	glClearColor(r, b, g, t);
-    }
     
     /**
      * This will loop the visualizer, it will first setup the necessities
