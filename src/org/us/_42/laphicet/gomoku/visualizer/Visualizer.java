@@ -1,89 +1,57 @@
 package org.us._42.laphicet.gomoku.visualizer;
 
-import org.lwjgl.*;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
-import org.lwjgl.system.*;
+import org.us._42.laphicet.gomoku.GameController;
+import org.us._42.laphicet.gomoku.GameStateReporter;
+import org.us._42.laphicet.gomoku.PlayerController;
 import org.lwjgl.BufferUtils;
 
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.system.MemoryUtil.*;
- 
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.*;
-import java.util.PrimitiveIterator.OfDouble;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
-public class Visualizer {
-	
-	/**
-	 * Generating variables that can be modified to change board setup
-	 * 
-	 * @BOARD_SIZE is the NxN size matrix for the board for gomoku
-	 * @BOARD_SPACE is the spacing between each point for the visualizer
-	 */
+import javax.imageio.ImageIO;
+
+public class Visualizer implements PlayerController, GameStateReporter {
+	private List<Integer[]> pieces = new ArrayList<Integer[]>();
+	private byte current_player = 1;
+	private int[] textures = new int[2];
+
 	public static final byte BOARD_SIZE = 19;
 	public static final byte BOARD_SPACE = 50;
 	
-	/**
-	 * These values are for mouse interactions and used for the sole
-	 * purpose of getting mouse position and input. These values
-	 * are DoubleBuffer because the function that uses these
-	 * @glfwGetCursorPos() takes in DoubleBuffers
-	 */
 	private DoubleBuffer mouseX = BufferUtils.createDoubleBuffer(1);
 	private DoubleBuffer mouseY = BufferUtils.createDoubleBuffer(1);
 	
-	/**
-	 * The window handler for the visualizer. This also creates the GLFW callbacks
-	 * which will later be used with the Gomoku variant extensions
-	 */
 	private GLFWKeyCallback keyCallback;
 	private long window;
 	private boolean mousePressed = false;
 
-	/**
-	 * This is the start of the visualizer, it will first call:
-	 * 
-	 * @init() in order to setup glfw and the visualizer
-	 * @createWindow() to create the windows
-	 * @createCallbacks() to grab user inputs
-	 * @displayWindow() to display the window for user to see
-	 * @visualizeLoop() to loop the visualizer
-	 * 
-	 * If the loop ever exits we need to free all callbacks and
-	 * destroy the window and properly terminate glfw, finally
-	 * will guarantee this always happens
-	 */
 	public void start() {
-		try {
-			init();
-			createWindow();
-			createCallbacks();
-			displayWindow();
-			visualizeLoop();
-		} 
-		finally {
-			glfwFreeCallbacks(window);
-			glfwDestroyWindow(window);
-			glfwTerminate();
-		}
+		init();
+		createWindow();
+		createCallbacks();
+		displayWindow();
+		beginVisualize();
 	}
 
-	/**
-	 * This will init GLFW as well as set properties for resizing and 
-	 * appearance state. It will also catch for any issue with loading GLFW
-	 * 
-	 * @GLFW_VISIBLE with @GLFW_FALSE sets window to hidden so we can 
-	 * draw stuff onto it before display
-	 * 
-	 * @GLFW_RESIZABLE with @GLFW_TRUE allows window to be resized by user
-	 */
+	public void end() {
+		glfwFreeCallbacks(window);
+		glfwDestroyWindow(window);
+		glfwTerminate();
+	}
+
 	private void init() {
 		if ( !glfwInit() )
 			throw new RuntimeException("Unable to initialize visualizer");
@@ -91,11 +59,6 @@ public class Visualizer {
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 	}
 	
-	/**
-	 * This will create a GLFW window to the specific size
-	 * @BOARD_SIZE + 1 multiplied by @BOARD_SPACE, exception will be thrown
-	 * if something goes wrong
-	 */
 	private void createWindow() {
 		window = glfwCreateWindow((BOARD_SIZE + 1) * BOARD_SPACE,
 				(BOARD_SIZE + 1) * BOARD_SPACE, "Gomoku", NULL, NULL);
@@ -103,45 +66,23 @@ public class Visualizer {
 			throw new RuntimeException("Failed to create the visualizer window");
 	}
 	
-	/**
-	 * This function setups callbacks for keyboard and mouse.
-	 * 
-	 * It uses @GomokuKeyCallBack.java to catch keyboard responses
-	 * It uses @GomokuCursorPosCallback.java to return back cursor position
-	 * 
-	 * Both are extensions from the GLFW variants
-	 */
 	private void createCallbacks() {
 		glfwSetKeyCallback(window, keyCallback = new GomokuKeyCallBack());
 	}
 
-	/**
-	 * This will make the window display properly.
-	 * glfwSwapInterval enables v-sync
-	 */
 	private void displayWindow() {
 		glfwMakeContextCurrent(window);
 		glfwSwapInterval(1);
 		glfwShowWindow(window);
 	}
 	
-	/**
-	 * This scans for user inputs. It uses the extended @GomokuKeyCallBack.isKeyDown() 
-	 * to see what key is pressed and if it matches the key macro passed in.
-	 * 
-	 * @glfwGetMouseButton() will check to see if the mouse button is pressed 
-	 * depending on which mouse button we want to know and compare to macro value.
-	 * 
-	 * @glfwGetCursorPos() will return us the position of the cursor when the mouse
-	 * is pressed. We use @.get(0) for the mouse coords to get the actual value from
-	 * the buffer that is set.
-	 */
-    private void scan(){
+    private void scan(int[] coords){
     	if (GomokuKeyCallBack.isKeyDown(GLFW_KEY_ESCAPE))
     		glfwSetWindowShouldClose(window, true);
     	if (!mousePressed && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
     		glfwGetCursorPos(window, mouseX, mouseY);
-    		System.out.println("X: " + mouseX.get(0) + " Y: " + mouseY.get(0));
+    		coords[0] = (int)Math.round(mouseX.get(0)/BOARD_SPACE) - 1;
+    		coords[1] = (int)Math.round(mouseY.get(0)/BOARD_SPACE) - 1;
     		mousePressed = true;
     	}
     	if (mousePressed && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
@@ -149,27 +90,146 @@ public class Visualizer {
     	}
     }
     
-    /**
-     * This will loop the visualizer, it will first setup the necessities
-     * in order to run @GL (GL.createCapabilities())
-     * 
-     * It will loop while the window should not close
-     * @glClear will clear the frame buffer
-     * @glSwapBuffers will swap color buffers
-     * @glfwPollEvents is for window events, without this callbacks won't be invoked
-     * @scan() is to look for specific input and respond
-     */
-	private void visualizeLoop() {
+    private void drawLine(float x1, float y1, float x2, float y2) {
+    	glBegin(GL_LINES);
+//    		glColor3f(0, 1, 0);
+    		glVertex2f(x1, y1);
+    		glVertex2f(x2, y2);
+    	glEnd();   
+    }
+    
+    private void initBoard() {
+    	glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, (BOARD_SIZE + 1) * BOARD_SPACE, 0, (BOARD_SIZE + 1) * BOARD_SPACE, -1, 1);
+        glMatrixMode(GL_MODELVIEW);
+    }
+    
+    private void renderBoard() {
+    	for (float i = 1; i <= BOARD_SIZE; i++) {
+    		drawLine(BOARD_SPACE, i * BOARD_SPACE, BOARD_SIZE * BOARD_SPACE, i * BOARD_SPACE);
+    		drawLine(i * BOARD_SPACE, BOARD_SPACE, i * BOARD_SPACE, BOARD_SIZE * BOARD_SPACE);
+    	}
+    }
+    
+    private void placePiece(int texture, int x, int y) {
+    	glBindTexture(GL_TEXTURE_2D, texture);
+    	
+    	glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    	glEnable(GL_TEXTURE_2D); 
+    	glBegin(GL_QUADS);
+    	{
+    		glTexCoord2f(0, 1);
+    		glVertex2i(x - (128/5),y - (128/5));
+    		glTexCoord2f(1, 1);
+    		glVertex2i(x + (128/5), y - (128/5));
+    		glTexCoord2f(1, 0);
+    		glVertex2i(x + (128/5), y + (128/5));
+    		glTexCoord2f(0, 0);
+    		glVertex2i(x - (128/5), y + (128/5));
+    	}
+    	glEnd();
+    	glDisable(GL_TEXTURE_2D);
+    	glPopMatrix();
+    }
+    
+    private int initTexture(String path) throws IOException {
+    	InputStream stream = Visualizer.class.getResourceAsStream(path);
+    	BufferedImage image = ImageIO.read(stream);
+    	
+    	int width = image.getWidth();
+    	int height = image.getHeight();
+    	
+    	int pixels[] = new int[width * height];
+    	image.getRGB(0, 0, width, height, pixels, 0, width);
+    	
+    	ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * 4);
+
+    	for(int y = 0; y < height; ++y) {
+    	    for(int x = 0; x < width; ++x) {
+    	        int pixel = pixels[x + y * width];
+    	        buffer.put((byte) ((pixel >> 16) & 0xFF));
+    	        buffer.put((byte) ((pixel >> 8) & 0xFF));
+    	        buffer.put((byte) (pixel & 0xFF));
+    	        buffer.put((byte) ((pixel >> 24) & 0xFF));
+    	    }
+    	}
+    	buffer.flip();
+    	
+    	int texture = glGenTextures(); 
+        glBindTexture(GL_TEXTURE_2D, texture); 
+    	
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    	
+    	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+    	
+    	return texture;
+    }
+    
+    private void renderPieces() {
+    	for (Integer[] piece : this.pieces) {
+    		placePiece(this.textures[piece[2]], piece[0] * BOARD_SPACE, ((int)(BOARD_SIZE + 1) * BOARD_SPACE) - (piece[1] * BOARD_SPACE));
+    	}
+    }
+
+	private void beginVisualize() {
 		GL.createCapabilities();
-		while ( !glfwWindowShouldClose(window) ) {
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glfwSwapBuffers(window);
-			glfwPollEvents();
-			scan();
+		initBoard();
+		
+		try {
+			this.textures[0] = initTexture("victini.png");
+			this.textures[1] = initTexture("claydol.png");
+		} catch (IOException e1) {
+			glfwSetWindowShouldClose(window, true);
+			e1.printStackTrace();
 		}
+		
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		renderBoard();
+        glfwSwapBuffers(window);
 	}
 
-	public static void main(String[] args) {
-		new Visualizer().start();
+	@Override
+	public void reportTurn(GameController game, int x, int y, byte piece, Collection<String> reports) {
+		this.pieces.add(new Integer[] {x + 1, y + 1, piece - 1});
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		renderBoard();
+		renderPieces();
+        glfwSwapBuffers(window);
+	}
+
+	@Override
+	public String name() {
+		if (current_player == 1)
+			return "Victini";
+		else
+			return "Claydol";
+	}
+
+	@Override
+	public void report(String message) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void informTurn(int x, int y, byte value) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void getMove(GameController game, byte piece, int[] coords) {
+		current_player = piece;
+		while (coords[0] == -1 && !glfwWindowShouldClose(window)) {
+			glfwPollEvents();
+			scan(coords);		
+		}
+		if (glfwWindowShouldClose(window)) {
+			game.abort();
+		}
 	}
 }

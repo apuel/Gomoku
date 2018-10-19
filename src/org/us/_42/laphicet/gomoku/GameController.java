@@ -17,6 +17,8 @@ public class GameController {
 	private byte current = 0;
 	private byte winner = 0;
 	
+	private boolean abort = false;
+	
 	/**
 	 * Creates a new game controller for Gomoku.
 	 * 
@@ -97,7 +99,7 @@ public class GameController {
 	public void start() {
 		int[] coords = new int[2];
 		
-		while (this.winner == 0) {
+		while (this.winner == 0 && !(this.abort)) {
 			PlayerController player = this.players[this.current];
 			byte value = (byte)(this.current + 1);
 			int captures = this.captures[this.current];
@@ -134,5 +136,9 @@ public class GameController {
 			
 			this.current = (byte)((this.current + 1) % PLAYER_COUNT);
 		}
+	}
+	
+	public void abort() {
+		this.abort = true;
 	}
 }

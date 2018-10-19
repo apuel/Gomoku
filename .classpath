@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JDK 1.8"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lwjgl-3.2.0/lwjgl.jar"/>
+	<classpathentry kind="lib" path="lwjgl-3.2.0/lwjgl-opengl.jar"/>
+	<classpathentry kind="lib" path="lwjgl-3.2.0/lwjgl-glfw.jar"/>
+	<classpathentry kind="lib" path="lwjgl-3.2.0/lwjgl-glfw-natives-macos.jar"/>
+	<classpathentry kind="lib" path="lwjgl-3.2.0/lwjgl-opengl-natives-macos.jar"/>
+	<classpathentry kind="lib" path="lwjgl-3.2.0/lwjgl-natives-macos.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
