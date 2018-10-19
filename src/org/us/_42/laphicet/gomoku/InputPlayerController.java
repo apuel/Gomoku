@@ -8,21 +8,21 @@ public class InputPlayerController implements PlayerController {
 	private int id = 1;
 	
 	@Override
-	public String Name() {
+	public String name() {
 		return ("User " + this.id);
 	}
 	
 	@Override
-	public void Report(String message) {
+	public void report(String message) {
 		System.err.println(message);
 		System.err.flush();
 	}
 	
 	@Override
-	public void InformTurn(int x, int y, byte value) { }
+	public void informTurn(int x, int y, byte value) { }
 	
 	@Override
-	public void GetMove(GameController game, byte piece, int[] coords) {
+	public void getMove(GameController game, byte piece, int[] coords) {
 		this.id = piece;
 		
 		System.out.print("Next move ('x y'): ");

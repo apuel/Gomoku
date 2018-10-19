@@ -6,14 +6,14 @@ public interface PlayerController {
 	 * 
 	 * @return A name.
 	 */
-	public String Name();
+	public String name();
 	
 	/**
 	 * Reports an error message to the player.
 	 * 
 	 * @param message An error message.
 	 */
-	public void Report(String message);
+	public void report(String message);
 	
 	/**
 	 * Informs the player that a piece has been placed.
@@ -22,7 +22,7 @@ public interface PlayerController {
 	 * @param y The y coordinate on the game board.
 	 * @param value The value of the piece.
 	 */
-	public void InformTurn(int x, int y, byte value);
+	public void informTurn(int x, int y, byte value);
 	
 	/**
 	 * Returns a move to be played on the given Gomoku game board.
@@ -31,5 +31,5 @@ public interface PlayerController {
 	 * @param piece The piece to be played.
 	 * @param coords The output buffer for the played coordinates. coords[0] = x, coords[1] = y
 	 */
-	public void GetMove(GameController game, byte piece, int[] coords);
+	public void getMove(GameController game, byte piece, int[] coords);
 }

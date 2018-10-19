@@ -54,7 +54,7 @@ public class GameController {
 	 * @param y The y coordinate for the piece.
 	 * @return The value of the piece at the given coordinates.
 	 */
-	public int GetPiece(int x, int y) {
+	public int getPiece(int x, int y) {
 		if (x < 0 || x >= BOARD_LENGTH || y < 0 || y >= BOARD_LENGTH)
 			return (-1);
 		return (this.board[y][x]);
@@ -68,17 +68,17 @@ public class GameController {
 	 * @param piece The value of the piece.
 	 * @return Whether or not the move is valid.
 	 */
-	private boolean ValidateMove(int x, int y, int piece) {
+	private boolean validateMove(int x, int y, int piece) {
 		PlayerController player = this.players[this.current];
-		int position = GetPiece(x, y);
+		int position = getPiece(x, y);
 		
 		if (position < 0) {
-			player.Report("Coordinates not in bounds!");
+			player.report("Coordinates not in bounds!");
 			return (false);
 		}
 		
 		if (position != 0) {
-			player.Report("There is already a piece in that position!");
+			player.report("There is already a piece in that position!");
 			return (false);
 		}
 		
@@ -94,7 +94,7 @@ public class GameController {
 	/**
 	 * Begins a new game of Gomoku.
 	 */
-	public void StartGame() {
+	public void start() {
 		int[] coords = new int[2];
 		
 		while (this.winner == 0) {
@@ -103,33 +103,33 @@ public class GameController {
 			int captures = this.captures[this.current];
 			
 			coords[0] = -1; coords[1] = -1;
-			player.GetMove(this, value, coords);
-			if (!this.ValidateMove(coords[0], coords[1], value))
+			player.getMove(this, value, coords);
+			if (!this.validateMove(coords[0], coords[1], value))
 				continue;
 			
 			int x = coords[0];
 			int y = coords[1];
 			
 			this.board[y][x] = value;
-			this.reports.add(String.format("%s placed a piece at %d, %d.", player.Name(), x, y));
+			this.reports.add(String.format("%s placed a piece at %d, %d.", player.name(), x, y));
 			
 			//Apply captures
 			
 			if (captures >= CAPTURES_TO_WIN) {
 				this.winner = value;
-				this.reports.add(String.format("%s has captured %d times!", player.Name(), captures));
+				this.reports.add(String.format("%s has captured %d times!", player.name(), captures));
 			}
 			
 			//If there is 5 in a row, check if it is possible to break it within the next turn
 			//If not, flag the player as a winner
 			
 			if (this.reporter != null) {
-				this.reporter.ReportTurn(this, x, y, value, this.reports);
+				this.reporter.reportTurn(this, x, y, value, this.reports);
 			}
 			this.reports.clear();
 			
 			for (PlayerController p : this.players) {
-				p.InformTurn(x, y, value);
+				p.informTurn(x, y, value);
 			}
 			
 			this.current = (byte)((this.current + 1) % PLAYER_COUNT);

@@ -12,5 +12,5 @@ public interface GameStateReporter {
 	 * @param piece The value of the placed piece.
 	 * @param reports A collection of reports detailing events.
 	 */
-	public void ReportTurn(GameController game, int x, int y, byte piece, Collection<String> reports);
+	public void reportTurn(GameController game, int x, int y, byte piece, Collection<String> reports);
 }

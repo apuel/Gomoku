@@ -5,6 +5,6 @@ public class Main {
 		PlayerController player = new InputPlayerController();
 		GameStateReporter reporter = new ConsoleStateReporter();
 		GameController game = new GameController(reporter, player, player);
-		game.StartGame();
+		game.start();
 	}
 }

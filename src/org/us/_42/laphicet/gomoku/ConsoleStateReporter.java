@@ -4,11 +4,11 @@ import java.util.Collection;
 
 public class ConsoleStateReporter implements GameStateReporter {
 	@Override
-	public void ReportTurn(GameController game, int x, int y, byte piece, Collection<String> reports) {
+	public void reportTurn(GameController game, int x, int y, byte piece, Collection<String> reports) {
 		System.out.println("[Game State]\n---------------------------------------------------------");
 		for (int yi = 0; yi < GameController.BOARD_LENGTH; yi++) {
 			for (int xi = 0; xi < GameController.BOARD_LENGTH; xi++) {
-				int position = game.GetPiece(xi, yi);
+				int position = game.getPiece(xi, yi);
 				
 				if (xi == x && yi == y) {
 					System.out.print(String.format("[%d]", position));
