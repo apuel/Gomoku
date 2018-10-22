@@ -27,6 +27,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	public static final byte BOARD_SIZE = 19;
 	public static final byte BOARD_SPACE = 50;
 	public static final int BOARD_WIDTH = (BOARD_SIZE + 1) * BOARD_SPACE;
+	public static final int PIECE_OFFSET = 350;
 	
 	private List<Integer[]> pieces = new ArrayList<Integer[]>();
 	private byte current_player = 1;
@@ -49,7 +50,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); 
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 		
-		this.window = glfwCreateWindow(BOARD_WIDTH, BOARD_WIDTH, "Gomoku", NULL, NULL);
+		this.window = glfwCreateWindow(BOARD_WIDTH, BOARD_WIDTH + 400, "Gomoku", NULL, NULL);
 		if (this.window == NULL) {
 			throw new RuntimeException("Failed to create the visualizer window");
 		}
@@ -108,9 +109,14 @@ public class Visualizer implements PlayerController, GameStateReporter {
      * Renders a blank board on the visualizer window.
      */
     private void renderBoard() {
+    	drawLine(50, BOARD_WIDTH + 350, BOARD_WIDTH - 50, BOARD_WIDTH + 350);
+		drawLine(50, BOARD_WIDTH + 200, 50, BOARD_WIDTH + 350);
+    	drawLine(50, BOARD_WIDTH + 200, BOARD_WIDTH - 50, BOARD_WIDTH + 200);
+		drawLine(BOARD_WIDTH - 50, BOARD_WIDTH + 200, BOARD_WIDTH - 50, BOARD_WIDTH + 350);
+		
     	for (float i = 1; i <= BOARD_SIZE; i++) {
-    		drawLine(BOARD_SPACE, i * BOARD_SPACE, BOARD_SIZE * BOARD_SPACE, i * BOARD_SPACE);
-    		drawLine(i * BOARD_SPACE, BOARD_SPACE, i * BOARD_SPACE, BOARD_SIZE * BOARD_SPACE);
+    		drawLine(BOARD_SPACE, i * BOARD_SPACE + 200, BOARD_SIZE * BOARD_SPACE, i * BOARD_SPACE + 200);
+    		drawLine(i * BOARD_SPACE, BOARD_SPACE + 200, i * BOARD_SPACE, BOARD_SIZE * BOARD_SPACE + 200);
     	}
     }
     
@@ -131,7 +137,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
     	glBegin(GL_QUADS);
     	{
     		glTexCoord2f(0, 1);
-    		glVertex2i(x - (128/5),y - (128/5));
+    		glVertex2i(x - (128/5), y - (128/5));
     		glTexCoord2f(1, 1);
     		glVertex2i(x + (128/5), y - (128/5));
     		glTexCoord2f(1, 0);
@@ -185,7 +191,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
      */
     private void renderPieces() {
     	for (Integer[] piece : this.pieces) {
-    		placePiece(this.textures[piece[2]], piece[0] * BOARD_SPACE, BOARD_WIDTH - (piece[1] * BOARD_SPACE));
+    		placePiece(this.textures[piece[2]], piece[0] * BOARD_SPACE, BOARD_WIDTH - (piece[1] * BOARD_SPACE) + PIECE_OFFSET);
     	}
     }
     
@@ -197,7 +203,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		
 		glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        glOrtho(0, BOARD_WIDTH, 0, BOARD_WIDTH, -1, 1);
+        glOrtho(0, BOARD_WIDTH, 0, BOARD_WIDTH + 400, -1, 1);
         glMatrixMode(GL_MODELVIEW);
 		
 		try {
