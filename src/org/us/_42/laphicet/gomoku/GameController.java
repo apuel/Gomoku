@@ -63,7 +63,7 @@ public class GameController {
 	}
 	
 	/**
-	 * Validates if placing a piece at the given coordinates os allowed.
+	 * Validates if placing a piece at the given coordinates is allowed.
 	 * 
 	 * @param x The x coordinate for the piece.
 	 * @param y The y coordinate for the piece.
