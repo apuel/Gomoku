@@ -233,8 +233,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	@Override
-	public void reportTurn(GameController game, int x, int y, byte piece, Collection<String> reports) {
-		this.pieces.add(new Integer[] {x + 1, y + 1, piece - 1});
+	public void reportTurn(GameController game, int x, int y, byte value, Collection<String> reports) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		renderBoard();
 		renderPieces();
@@ -258,9 +257,13 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	@Override
-	public void informTurn(int x, int y, byte value) {
-		// TODO Auto-generated method stub
-		
+	public void informMove(int x, int y, byte value) {
+		if (value != 0) {
+			this.pieces.add(new Integer[] {x + 1, y + 1, value - 1});
+		}
+		else {
+			//Remove piece matching coordinates from this.pieces
+		}
 	}
 	
 	@Override

@@ -22,14 +22,14 @@ public interface PlayerController {
 	 * @param y The y coordinate on the game board.
 	 * @param value The value of the piece.
 	 */
-	public void informTurn(int x, int y, byte value);
+	public void informMove(int x, int y, byte value);
 	
 	/**
 	 * Returns a move to be played on the given Gomoku game board.
 	 * 
 	 * @param game The game controller for the game.
-	 * @param piece The piece to be played.
+	 * @param value The piece to be played.
 	 * @param coords The output buffer for the played coordinates. coords[0] = x, coords[1] = y
 	 */
-	public void getMove(GameController game, byte piece, int[] coords);
+	public void getMove(GameController game, byte value, int[] coords);
 }

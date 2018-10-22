@@ -9,8 +9,8 @@ public interface GameStateReporter {
 	 * @param game The Gomoku game controller including the game board.
 	 * @param x The x coordinate of the placed piece.
 	 * @param y The y coordinate of the placed piece.
-	 * @param piece The value of the placed piece.
+	 * @param value The value of the placed piece.
 	 * @param reports A collection of reports detailing events.
 	 */
-	public void reportTurn(GameController game, int x, int y, byte piece, Collection<String> reports);
+	public void reportTurn(GameController game, int x, int y, byte value, Collection<String> reports);
 }

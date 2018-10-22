@@ -125,14 +125,14 @@ public class GameController {
 			//If there is 5 in a row, check if it is possible to break it within the next turn
 			//If not, flag the player as a winner
 			
+			for (PlayerController p : this.players) {
+				p.informMove(x, y, value);
+			}
+			
 			if (this.reporter != null) {
 				this.reporter.reportTurn(this, x, y, value, this.reports);
 			}
 			this.reports.clear();
-			
-			for (PlayerController p : this.players) {
-				p.informTurn(x, y, value);
-			}
 			
 			this.current = (byte)((this.current + 1) % PLAYER_COUNT);
 		}

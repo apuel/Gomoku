@@ -19,7 +19,7 @@ public class InputPlayerController implements PlayerController {
 	}
 	
 	@Override
-	public void informTurn(int x, int y, byte value) { }
+	public void informMove(int x, int y, byte value) { }
 	
 	@Override
 	public void getMove(GameController game, byte piece, int[] coords) {
