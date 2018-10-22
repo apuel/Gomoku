@@ -270,10 +270,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
 			this.pieces.add(new Integer[] {x + 1, y + 1, value - 1});
 		}
 		else {
-			//Remove piece matching coordinates from this.pieces
 	    	for (int i = 0; i < pieces.size(); i++) {
 	    		Integer[] tmp = pieces.get(i);
-	    		if (tmp[0] == x && tmp[1] == y) {
+	    		if ((tmp[0] - 1) == x && (tmp[1] - 1) == y) {
 	    			pieces.remove(i);
 	    			break;
 	    		}

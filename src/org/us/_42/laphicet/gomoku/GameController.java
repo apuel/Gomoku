@@ -95,14 +95,17 @@ public class GameController {
 	
 	private static String CAPTURE_FORMAT = "%s captured %s's piece at %d, %d.";
 	
+	/**
+	 * Applies a capture within the vector of dx and dy.
+	 * 
+	 * @param x The x coordinate of the placed piece.
+	 * @param y The y coordinate of the placed piece.
+	 * @param value The value of the placed piece.
+	 * @param dx The x direction to attempt a capture in.
+	 * @param dy The y direction to attempt a capture in.
+	 */
 	private void applyCapture(int x, int y, byte value, int dx, int dy) {
-		PlayerController player = this.players[value - 1];
-		
-		if (x + (dx * 3) < 0 || x + (dx * 3) >= BOARD_LENGTH ||
-			y + (dy * 3) < 0 || y + (dy * 3) >= BOARD_LENGTH)
-		{
-			return;
-		}
+		PlayerController player = this.players[this.current];
 		
 		if (this.getPiece(x + (dx * 3), y + (dy * 3)) == value) {
 			int v1 = this.getPiece(x + (dx * 1), y + (dy * 1));
@@ -113,6 +116,7 @@ public class GameController {
 				this.reports.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v2 - 1].name((byte)v2), x + (dx * 2), y + (dy * 2)));
 				this.board[y + (dy * 1)][x + (dx * 1)] = (byte)0;
 				this.board[y + (dy * 2)][x + (dx * 2)] = (byte)0;
+				this.captures[this.current]++;
 				
 				for (PlayerController p : this.players) {
 					p.informMove(x + (dx * 1), y + (dy * 1), (byte)0);
@@ -122,6 +126,13 @@ public class GameController {
 		}
 	}
 	
+	/**
+	 * Applies captures possible from a given move.
+	 * 
+	 * @param x The x coordinate of the placed piece.
+	 * @param y The y coordinate of the placed piece.
+	 * @param value The value of the placed piece.
+	 */
 	private void applyCaptures(int x, int y, byte value) {
 		this.applyCapture(x, y, value, -1, +0);
 		this.applyCapture(x, y, value, +1, +0);
@@ -157,14 +168,14 @@ public class GameController {
 			this.reports.add(String.format("%s placed a piece at %d, %d.", player.name(value), x, y));
 			
 			this.applyCaptures(x, y, value);
-			
 			if (captures >= CAPTURES_TO_WIN) {
 				this.winner = value;
-				this.reports.add(String.format("%s has captured %d times!", player.name(value), captures));
+				this.reports.add(String.format("%s has captured %d times and won!", player.name(value), captures));
 			}
-			
-			//If there is 5 in a row, check if it is possible to break it within the next turn
-			//If not, flag the player as a winner
+			else {
+				//If there is 5 in a row, check if it is possible to break it within the next turn
+				//If not, flag the player as a winner
+			}
 			
 			for (PlayerController p : this.players) {
 				p.informMove(x, y, value);
