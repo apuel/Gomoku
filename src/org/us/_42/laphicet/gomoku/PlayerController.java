@@ -4,9 +4,11 @@ public interface PlayerController {
 	/**
 	 * Returns a name for the Player.
 	 * 
+	 * @param value An value representing the player's piece.
+	 * This can be used to implement multiple players within one PlayerController.
 	 * @return A name.
 	 */
-	public String name();
+	public String name(byte value);
 	
 	/**
 	 * Reports an error message to the player.

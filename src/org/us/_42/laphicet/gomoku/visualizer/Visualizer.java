@@ -30,7 +30,6 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	public static final int PIECE_OFFSET = 350;
 	
 	private List<Integer[]> pieces = new ArrayList<Integer[]>();
-	private byte current_player = 1;
 	private int[] textures = new int[2];
 	
 	private DoubleBuffer mouseX = BufferUtils.createDoubleBuffer(1);
@@ -247,8 +246,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	@Override
-	public String name() {
-		if (this.current_player == 1) {
+	public String name(byte value) {
+		if (value == 1) {
 			return "Victini";
 		}
 		else {
@@ -274,7 +273,6 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	
 	@Override
 	public void getMove(GameController game, byte piece, int[] coords) {
-		this.current_player = piece;
 		while (coords[0] == -1 && !glfwWindowShouldClose(this.window)) {
 			glfwPollEvents();
 			scan(coords);		

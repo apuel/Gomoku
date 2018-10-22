@@ -5,11 +5,10 @@ import java.util.Scanner;
 
 public class InputPlayerController implements PlayerController {
 	private static final Scanner scanner = new Scanner(System.in);
-	private int id = 1;
 	
 	@Override
-	public String name() {
-		return ("User " + this.id);
+	public String name(byte value) {
+		return ("User " + value);
 	}
 	
 	@Override
@@ -23,8 +22,6 @@ public class InputPlayerController implements PlayerController {
 	
 	@Override
 	public void getMove(GameController game, byte piece, int[] coords) {
-		this.id = piece;
-		
 		System.out.print("Next move ('x y'): ");
 		try {
 			String input = scanner.nextLine();

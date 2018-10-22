@@ -93,6 +93,47 @@ public class GameController {
 		return (true);
 	}
 	
+	private static String CAPTURE_FORMAT = "%s captured %s's piece at %d, %d.";
+	
+	private void applyCapture(int x, int y, byte value, int dx, int dy) {
+		PlayerController player = this.players[value - 1];
+		
+		if (x + (dx * 3) < 0 || x + (dx * 3) >= BOARD_LENGTH ||
+			y + (dy * 3) < 0 || y + (dy * 3) >= BOARD_LENGTH)
+		{
+			return;
+		}
+		
+		if (this.getPiece(x + (dx * 3), y + (dy * 3)) == value) {
+			int v1 = this.getPiece(x + (dx * 1), y + (dy * 1));
+			int v2 = this.getPiece(x + (dx * 2), y + (dy * 2));
+			
+			if (v1 > 0 && v1 != value && v2 > 0 && v2 != value) {
+				this.reports.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v1 - 1].name((byte)v1), x + (dx * 1), y + (dy * 1)));
+				this.reports.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v2 - 1].name((byte)v2), x + (dx * 2), y + (dy * 2)));
+				this.board[y + (dy * 1)][x + (dx * 1)] = (byte)0;
+				this.board[y + (dy * 2)][x + (dx * 2)] = (byte)0;
+				
+				for (PlayerController p : this.players) {
+					p.informMove(x + (dx * 1), y + (dy * 1), (byte)0);
+					p.informMove(x + (dx * 2), y + (dy * 2), (byte)0);
+				}
+			}
+		}
+	}
+	
+	private void applyCaptures(int x, int y, byte value) {
+		this.applyCapture(x, y, value, -1, +0);
+		this.applyCapture(x, y, value, +1, +0);
+		this.applyCapture(x, y, value, +0, -1);
+		this.applyCapture(x, y, value, +0, +1);
+		
+		this.applyCapture(x, y, value, -1, +1);
+		this.applyCapture(x, y, value, +1, +1);
+		this.applyCapture(x, y, value, +1, -1);
+		this.applyCapture(x, y, value, -1, -1);
+	}
+	
 	/**
 	 * Begins a new game of Gomoku.
 	 */
@@ -113,13 +154,13 @@ public class GameController {
 			int y = coords[1];
 			
 			this.board[y][x] = value;
-			this.reports.add(String.format("%s placed a piece at %d, %d.", player.name(), x, y));
+			this.reports.add(String.format("%s placed a piece at %d, %d.", player.name(value), x, y));
 			
-			//Apply captures
+			this.applyCaptures(x, y, value);
 			
 			if (captures >= CAPTURES_TO_WIN) {
 				this.winner = value;
-				this.reports.add(String.format("%s has captured %d times!", player.name(), captures));
+				this.reports.add(String.format("%s has captured %d times!", player.name(value), captures));
 			}
 			
 			//If there is 5 in a row, check if it is possible to break it within the next turn
