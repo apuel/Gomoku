@@ -1,6 +1,8 @@
 package org.us._42.laphicet.gomoku;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class GameController {
 	public static final int BOARD_LENGTH = 19;
@@ -13,11 +15,14 @@ public class GameController {
 	private ArrayList<String> reports = new ArrayList<String>();
 	
 	private PlayerController[] players = new PlayerController[PLAYER_COUNT];
+	private Set<PlayerController> set = new HashSet<PlayerController>();
+	
 	private int[] captures = new int[PLAYER_COUNT];
 	private byte current = 0;
 	private byte winner = 0;
 	
 	private boolean abort = false;
+	private boolean running = false;
 	
 	/**
 	 * Creates a new game controller for Gomoku.
@@ -37,6 +42,7 @@ public class GameController {
 				throw new IllegalArgumentException("Player may not be null!");
 			}
 			this.players[i] = players[i];
+			this.set.add(players[i]);
 		}
 	}
 	
@@ -67,19 +73,19 @@ public class GameController {
 	 * 
 	 * @param x The x coordinate for the piece.
 	 * @param y The y coordinate for the piece.
-	 * @param piece The value of the piece.
+	 * @param value The value of the piece.
 	 * @return Whether or not the move is valid.
 	 */
-	private boolean validateMove(int x, int y, int piece) {
+	private boolean validateMove(int x, int y, int value) {
 		PlayerController player = this.players[this.current];
-		int position = getPiece(x, y);
+		int tmp = getPiece(x, y);
 		
-		if (position < 0) {
+		if (tmp < 0) {
 			player.report("Coordinates not in bounds!");
 			return (false);
 		}
 		
-		if (position != 0) {
+		if (tmp != 0) {
 			player.report("There is already a piece in that position!");
 			return (false);
 		}
@@ -118,7 +124,7 @@ public class GameController {
 				this.board[y + (dy * 2)][x + (dx * 2)] = (byte)0;
 				this.captures[this.current]++;
 				
-				for (PlayerController p : this.players) {
+				for (PlayerController p : this.set) {
 					p.informMove(x + (dx * 1), y + (dy * 1), (byte)0);
 					p.informMove(x + (dx * 2), y + (dy * 2), (byte)0);
 				}
@@ -149,8 +155,13 @@ public class GameController {
 	 * Begins a new game of Gomoku.
 	 */
 	public void start() {
+		if (this.running) {
+			return;
+		}
+		
 		int[] coords = new int[2];
 		
+		this.running = true;
 		while (this.winner == 0 && !(this.abort)) {
 			PlayerController player = this.players[this.current];
 			byte value = (byte)(this.current + 1);
@@ -167,6 +178,10 @@ public class GameController {
 			this.board[y][x] = value;
 			this.reports.add(String.format("%s placed a piece at %d, %d.", player.name(value), x, y));
 			
+			for (PlayerController p : this.set) {
+				p.informMove(x, y, value);
+			}
+			
 			this.applyCaptures(x, y, value);
 			if (captures >= CAPTURES_TO_WIN) {
 				this.winner = value;
@@ -177,10 +192,6 @@ public class GameController {
 				//If not, flag the player as a winner
 			}
 			
-			for (PlayerController p : this.players) {
-				p.informMove(x, y, value);
-			}
-			
 			if (this.reporter != null) {
 				this.reporter.reportTurn(this, x, y, value, this.reports);
 			}
@@ -188,9 +199,66 @@ public class GameController {
 			
 			this.current = (byte)((this.current + 1) % PLAYER_COUNT);
 		}
+		this.running = false;
 	}
 	
+	/**
+	 * Forces a fatal exit condition on the game's main loop.
+	 */
 	public void abort() {
 		this.abort = true;
+	}
+	
+	/**
+	 * Resets the state of the game.
+	 */
+	public void reset() {
+		if (!this.running) {
+			for (int y = 0; y < BOARD_LENGTH; y++) {
+				for (int x = 0; x < BOARD_LENGTH; x++) {
+					this.board[y][x] = 0;
+				}
+			}
+			
+			reports.clear();
+			this.current = 0;
+			this.winner = 0;
+			this.abort = false;
+		}
+	}
+	
+	/**
+	 * Resets the state of the game.
+	 * 
+	 * @param reporter A handler for updated game states.
+	 * @param players The player controllers representing the participants.
+	 */
+	public void reset(GameStateReporter reporter, PlayerController... players) {
+		if (!this.running) {
+			this.reset();
+			
+			this.reporter = reporter;
+			
+			if (players.length < PLAYER_COUNT) {
+				throw new IllegalArgumentException("Not enough players to start a game!");
+			}
+			
+			for (int i = 0; i < PLAYER_COUNT; i++) {
+				if (players[i] == null) {
+					throw new IllegalArgumentException("Player may not be null!");
+				}
+				this.players[i] = players[i];
+				this.set.add(players[i]);
+			}
+		}
+	}
+	
+	/**
+	 * Resets the state of the game.
+	 * 
+	 * @param players The player controllers representing the participants.
+	 */
+	public void reset(PlayerController... players) {
+		this.reset(null, players);
 	}
 }
