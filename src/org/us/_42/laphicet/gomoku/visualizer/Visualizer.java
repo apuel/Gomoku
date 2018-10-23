@@ -14,6 +14,7 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
 import static org.lwjgl.system.MemoryUtil.*;
 
+import java.awt.FontFormatException;
 import java.awt.image.BufferedImage;
 
 import java.io.IOException;
@@ -38,10 +39,13 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	
 	private Set<Piece> pieces = new HashSet<Piece>();
 	private int[] textures = new int[2];
+	private int backgroundTexture;
+	private BufferedImage[] images = new BufferedImage[3];
 	
 	private DoubleBuffer mouseX = BufferUtils.createDoubleBuffer(1);
 	private DoubleBuffer mouseY = BufferUtils.createDoubleBuffer(1);
 	
+	private TextUtil textutil = new TextUtil();
 	private GLFWKeyCallback keyCallback;
 	private long window;
 	private boolean mousePressed = false;
@@ -102,12 +106,16 @@ public class Visualizer implements PlayerController, GameStateReporter {
      * @param y2 The y coordinate for the second pair.
      */
     private void drawLine(float x1, float y1, float x2, float y2) {
+    	glColor3f(0.0f, 0.0f, 0.0f);
     	glBegin(GL_LINES);
     	{
-    		glVertex2f(x1, y1);
-    		glVertex2f(x2, y2);
+    		for (float i = -1.337f; i < 1.337f; i += 0.01f) {
+    			glVertex2f(x1 + i, y1 + i);
+    			glVertex2f(x2 + i, y2 + i);
+    		}
     	}
     	glEnd();
+    	glColor3f(1.0f, 1.0f, 1.0f);
     }
     
     /**
@@ -159,6 +167,29 @@ public class Visualizer implements PlayerController, GameStateReporter {
     	glDisable(GL_TEXTURE_2D);
     	glPopMatrix();
     }
+ 
+    private void renderBackground(int texture, int x, int y) {
+    	glBindTexture(GL_TEXTURE_2D, texture);
+    	
+    	glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        
+    	glEnable(GL_TEXTURE_2D); 
+    	glBegin(GL_QUADS);
+    	{
+    		glTexCoord2f(0, 1);
+    		glVertex2i(50, 50);
+    		glTexCoord2f(1, 1);
+    		glVertex2i(950, 50);
+    		glTexCoord2f(1, 0);
+    		glVertex2i(950, 1250);
+    		glTexCoord2f(0, 0);
+    		glVertex2i(50, 1250);
+    	}
+    	glEnd();
+    	glDisable(GL_TEXTURE_2D);
+    	glPopMatrix();
+    }
     
     /**
      * Initializes a texture from an image.
@@ -167,10 +198,15 @@ public class Visualizer implements PlayerController, GameStateReporter {
      * @return The GL texture id
      * @throws IOException If there was an error attempting to read the image.
      */
-    private int initTexture(String path) throws IOException {
+    private BufferedImage getBufferedImage(String path) throws IOException {
     	InputStream stream = Visualizer.class.getResourceAsStream(path);
     	BufferedImage image = ImageIO.read(stream);
+    	stream.close();
     	
+    	return image;
+    }
+    
+    private int initTexture(BufferedImage image) {
     	int width = image.getWidth();
     	int height = image.getHeight();
     	int pixels[] = new int[width * height];
@@ -211,21 +247,19 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private void beginVisualize() {
 		GL.createCapabilities();
 		
+//		textutil.renderTexture();
+		
 //		glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(0, BOARD_WIDTH, 0, BOARD_WIDTH + BOARD_OFFSET, -1, 1);
 //        glMatrixMode(GL_MODELVIEW); 
 		
-		try {
-			this.textures[0] = initTexture("victini.png");
-			this.textures[1] = initTexture("claydol.png");
-		}
-		catch (IOException e) {
-			glfwSetWindowShouldClose(this.window, true);
-			e.printStackTrace();
-		}
+		this.textures[0] = initTexture(this.images[0]);
+		this.textures[1] = initTexture(this.images[1]);
+		this.backgroundTexture = initTexture(this.images[2]);
 		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		renderBackground(this.backgroundTexture, 650, 650);
 		renderBoard();
         glfwSwapBuffers(this.window);
 	}
@@ -235,6 +269,14 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	 */
 	public void start() {
 		init();
+		try {
+			this.images[0] = getBufferedImage("./img/victini.png");
+			this.images[1] = getBufferedImage("./img/claydol.png");
+			this.images[2] = getBufferedImage("./img/field.png");
+//			textutil.init("./ttf/Raleway-Light.ttf");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		displayWindow();
 		beginVisualize();
 	}
@@ -247,12 +289,14 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		glfwDestroyWindow(this.window);
 		glfwTerminate();
 	}
-
+	
 	@Override
 	public void reportTurn(GameController game, int x, int y, byte value, Collection<String> reports) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		renderBackground(this.backgroundTexture, 650, 650);
 		renderBoard();
 		renderPieces();
+//		textutil.drawText("asdsdsdsdsdsdsdsdsdsdsdsd", 100, 100);
         glfwSwapBuffers(this.window);
 	}
 	
