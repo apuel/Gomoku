@@ -29,9 +29,10 @@ public interface PlayerController {
 	/**
 	 * Returns a move to be played on the given Gomoku game board.
 	 * 
-	 * @param game The game controller for the game.
+	 * @param game The Gomoku game controller.
 	 * @param value The piece to be played.
 	 * @param coords The output buffer for the played coordinates. coords[0] = x, coords[1] = y
+	 * @return Whether the player made a move or not.
 	 */
-	public void getMove(GameController game, byte value, int[] coords);
+	public boolean getMove(Gomoku game, byte value, int[] coords);
 }

@@ -2,8 +2,8 @@ package org.us._42.laphicet.gomoku.visualizer;
 
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
-import org.us._42.laphicet.gomoku.GameController;
 import org.us._42.laphicet.gomoku.GameStateReporter;
+import org.us._42.laphicet.gomoku.Gomoku;
 import org.us._42.laphicet.gomoku.PlayerController;
 
 import org.lwjgl.BufferUtils;
@@ -45,7 +45,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private DoubleBuffer mouseX = BufferUtils.createDoubleBuffer(1);
 	private DoubleBuffer mouseY = BufferUtils.createDoubleBuffer(1);
 	
-	private TextUtil textutil = new TextUtil();
+//	private TextUtil textutil = new TextUtil();
 	private GLFWKeyCallback keyCallback;
 	private long window;
 	private boolean mousePressed = false;
@@ -291,7 +291,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	@Override
-	public void reportTurn(GameController game, int x, int y, byte value, Collection<String> reports) {
+	public void reportTurn(Gomoku game, int x, int y, byte value, Collection<String> reports) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		renderBackground(this.backgroundTexture, 650, 650);
 		renderBoard();
@@ -327,7 +327,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	@Override
-	public void getMove(GameController game, byte piece, int[] coords) {
+	public boolean getMove(Gomoku game, byte piece, int[] coords) {
 		while (coords[0] == -1 && !glfwWindowShouldClose(this.window)) {
 			glfwPollEvents();
 			scan(coords);		
@@ -335,5 +335,6 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		if (glfwWindowShouldClose(this.window)) {
 			game.abort();
 		}
+		return (true);
 	}
 }

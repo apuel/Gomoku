@@ -2,24 +2,25 @@ package org.us._42.laphicet.gomoku;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-public class GameController {
+public class Gomoku {
 	public static final int BOARD_LENGTH = 19;
-	public static final byte PLAYER_COUNT = 2;
+	public static final int PLAYER_COUNT = 2;
 	public static final int CAPTURES_TO_WIN = 10;
-
+	
 	private byte[][] board = new byte[BOARD_LENGTH][BOARD_LENGTH];
 	
 	private GameStateReporter reporter;
-	private ArrayList<String> reports = new ArrayList<String>();
+	private List<String> reports = new ArrayList<String>();
 	
 	private PlayerController[] players = new PlayerController[PLAYER_COUNT];
 	private Set<PlayerController> set = new HashSet<PlayerController>();
 	
 	private int[] captures = new int[PLAYER_COUNT];
-	private byte current = 0;
-	private byte winner = 0;
+	private int current = 0;
+	private int winner = 0;
 	
 	private boolean abort = false;
 	private boolean running = false;
@@ -30,7 +31,7 @@ public class GameController {
 	 * @param reporter A handler for updated game states.
 	 * @param players The player controllers representing the participants.
 	 */
-	public GameController(GameStateReporter reporter, PlayerController... players) {
+	public Gomoku(GameStateReporter reporter, PlayerController... players) {
 		this.reporter = reporter;
 		
 		if (players.length < PLAYER_COUNT) {
@@ -51,7 +52,7 @@ public class GameController {
 	 * 
 	 * @param players The player controllers representing the participants.
 	 */
-	public GameController(PlayerController... players) {
+	public Gomoku(PlayerController... players) {
 		this(null, players);
 	}
 	
@@ -63,8 +64,9 @@ public class GameController {
 	 * @return The value of the piece at the given coordinates.
 	 */
 	public int getPiece(int x, int y) {
-		if (x < 0 || x >= BOARD_LENGTH || y < 0 || y >= BOARD_LENGTH)
+		if (x < 0 || x >= BOARD_LENGTH || y < 0 || y >= BOARD_LENGTH) {
 			return (-1);
+		}
 		return (this.board[y][x]);
 	}
 	
@@ -102,7 +104,7 @@ public class GameController {
 	private static String CAPTURE_FORMAT = "%s captured %s's piece at %d, %d.";
 	
 	/**
-	 * Applies a capture within the vector of dx and dy.
+	 * Applies a capture (if possible) within the vector of dx and dy.
 	 * 
 	 * @param x The x coordinate of the placed piece.
 	 * @param y The y coordinate of the placed piece.
@@ -120,8 +122,8 @@ public class GameController {
 			if (v1 > 0 && v1 != value && v2 > 0 && v2 != value) {
 				this.reports.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v1 - 1].name((byte)v1), x + (dx * 1), y + (dy * 1)));
 				this.reports.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v2 - 1].name((byte)v2), x + (dx * 2), y + (dy * 2)));
-				this.board[y + (dy * 1)][x + (dx * 1)] = (byte)0;
-				this.board[y + (dy * 2)][x + (dx * 2)] = (byte)0;
+				this.board[y + (dy * 1)][x + (dx * 1)] = 0;
+				this.board[y + (dy * 2)][x + (dx * 2)] = 0;
 				this.captures[this.current]++;
 				
 				for (PlayerController p : this.set) {
@@ -152,25 +154,23 @@ public class GameController {
 	}
 	
 	/**
-	 * Begins a new game of Gomoku.
+	 * Tries to fetch the next input from 
 	 */
-	public void start() {
-		if (this.running) {
-			return;
-		}
-		
+	private void nextTurn() {
 		int[] coords = new int[2];
 		
-		this.running = true;
-		while (this.winner == 0 && !(this.abort)) {
+		if (this.winner == 0 && !(this.abort)) {
 			PlayerController player = this.players[this.current];
 			byte value = (byte)(this.current + 1);
 			int captures = this.captures[this.current];
 			
 			coords[0] = -1; coords[1] = -1;
-			player.getMove(this, value, coords);
-			if (!this.validateMove(coords[0], coords[1], value))
-				continue;
+			if (!player.getMove(this, value, coords)) {
+				return;
+			}
+			if (!this.validateMove(coords[0], coords[1], value)) {
+				return;
+			}
 			
 			int x = coords[0];
 			int y = coords[1];
@@ -197,7 +197,34 @@ public class GameController {
 			}
 			this.reports.clear();
 			
-			this.current = (byte)((this.current + 1) % PLAYER_COUNT);
+			this.current = (this.current + 1) % PLAYER_COUNT;
+		}
+	}
+	
+	/**
+	 * Runs the next turn.
+	 */
+	public void next() {
+		if (this.running) {
+			return;
+		}
+		
+		this.running = true;
+		this.nextTurn();
+		this.running = false;
+	}
+	
+	/**
+	 * Auto runs the duration of the game.
+	 */
+	public void auto() {
+		if (this.running) {
+			return;
+		}
+		
+		this.running = true;
+		while (this.winner == 0 && !(this.abort)) {
+			this.nextTurn();
 		}
 		this.running = false;
 	}

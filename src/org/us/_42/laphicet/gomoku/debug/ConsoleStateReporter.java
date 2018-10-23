@@ -1,13 +1,16 @@
-package org.us._42.laphicet.gomoku;
+package org.us._42.laphicet.gomoku.debug;
 
 import java.util.Collection;
 
+import org.us._42.laphicet.gomoku.GameStateReporter;
+import org.us._42.laphicet.gomoku.Gomoku;
+
 public class ConsoleStateReporter implements GameStateReporter {
 	@Override
-	public void reportTurn(GameController game, int x, int y, byte piece, Collection<String> reports) {
+	public void reportTurn(Gomoku game, int x, int y, byte piece, Collection<String> reports) {
 		System.out.println("[Game State]\n---------------------------------------------------------");
-		for (int yi = 0; yi < GameController.BOARD_LENGTH; yi++) {
-			for (int xi = 0; xi < GameController.BOARD_LENGTH; xi++) {
+		for (int yi = 0; yi < Gomoku.BOARD_LENGTH; yi++) {
+			for (int xi = 0; xi < Gomoku.BOARD_LENGTH; xi++) {
 				int position = game.getPiece(xi, yi);
 				
 				if (xi == x && yi == y) {

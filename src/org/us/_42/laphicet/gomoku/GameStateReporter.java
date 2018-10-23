@@ -12,5 +12,5 @@ public interface GameStateReporter {
 	 * @param value The value of the placed piece.
 	 * @param reports A collection of reports detailing events.
 	 */
-	public void reportTurn(GameController game, int x, int y, byte value, Collection<String> reports);
+	public void reportTurn(Gomoku game, int x, int y, byte value, Collection<String> reports);
 }

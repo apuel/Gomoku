@@ -1,7 +1,10 @@
-package org.us._42.laphicet.gomoku;
+package org.us._42.laphicet.gomoku.debug;
 
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+
+import org.us._42.laphicet.gomoku.Gomoku;
+import org.us._42.laphicet.gomoku.PlayerController;
 
 public class InputPlayerController implements PlayerController {
 	private static final Scanner scanner = new Scanner(System.in);
@@ -21,7 +24,7 @@ public class InputPlayerController implements PlayerController {
 	public void informMove(int x, int y, byte value) { }
 	
 	@Override
-	public void getMove(GameController game, byte piece, int[] coords) {
+	public boolean getMove(Gomoku game, byte piece, int[] coords) {
 		System.out.print("Next move ('x y'): ");
 		try {
 			String input = scanner.nextLine();
@@ -33,12 +36,16 @@ public class InputPlayerController implements PlayerController {
 					coords[0] = x;
 					coords[1] = y;
 				}
-				catch (NumberFormatException e) { }
+				catch (NumberFormatException e) {
+					this.report("Failed to parse coordinates from input!");
+					return (false);
+				}
 			}
 		}
 		catch (NoSuchElementException | IllegalStateException e) {
 			e.printStackTrace();
 			System.exit(-1);
 		}
+		return (true);
 	}
 }
