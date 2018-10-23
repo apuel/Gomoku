@@ -3,7 +3,7 @@ package org.us._42.laphicet.gomoku.visualizer;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import static org.lwjgl.glfw.GLFW.*;
 
-public class GomokuKeyCallBack extends GLFWKeyCallback {
+public class KeyCallBack extends GLFWKeyCallback {
 	public static boolean[] keys = new boolean[65536];
 	
 	@Override

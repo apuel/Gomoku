@@ -5,6 +5,7 @@ import org.lwjgl.opengl.*;
 import org.us._42.laphicet.gomoku.GameController;
 import org.us._42.laphicet.gomoku.GameStateReporter;
 import org.us._42.laphicet.gomoku.PlayerController;
+
 import org.lwjgl.BufferUtils;
 
 import static org.lwjgl.glfw.Callbacks.*;
@@ -14,12 +15,13 @@ import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
 import static org.lwjgl.system.MemoryUtil.*;
 
 import java.awt.image.BufferedImage;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.*;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 
@@ -29,11 +31,12 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private static final byte BOARD_SPACE = 50;
 	private static final int BOARD_WIDTH = (BOARD_SIZE + 1) * BOARD_SPACE;
 	private static final int PIECE_OFFSET = 150;
-	private static final int STATBOX_OFFSET1 = 100;
-	private static final int STATBOX_OFFSET2 = 250;
+	private static final int STATBOX_OFFSET = 100;
+	private static final int MIDDLE_OFFSET = 250;
+	private static final int REPORTBOX_OFFSET = 50;
 	private static final int TEXTURE_OFFSET = (128/5);
 	
-	private List<Integer[]> pieces = new ArrayList<Integer[]>();
+	private Set<Piece> pieces = new HashSet<Piece>();
 	private int[] textures = new int[2];
 	
 	private DoubleBuffer mouseX = BufferUtils.createDoubleBuffer(1);
@@ -57,7 +60,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 			throw new RuntimeException("Failed to create the visualizer window");
 		}
 		
-		this.keyCallback = new GomokuKeyCallBack();
+		this.keyCallback = new KeyCallBack();
 		glfwSetKeyCallback(window, this.keyCallback);
 	}
 	
@@ -76,7 +79,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	 * @param coords The output buffer for game-board coordinates.
 	 */
     private void scan(int[] coords){
-    	if (GomokuKeyCallBack.isKeyDown(GLFW_KEY_ESCAPE)) {
+    	if (KeyCallBack.isKeyDown(GLFW_KEY_ESCAPE)) {
     		glfwSetWindowShouldClose(this.window, true);
     	}
     	if (!this.mousePressed && glfwGetMouseButton(this.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
@@ -111,15 +114,20 @@ public class Visualizer implements PlayerController, GameStateReporter {
      * Renders a blank board on the visualizer window.
      */
     private void renderBoard() {
-    	drawLine(BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET2, BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET2);
-		drawLine(BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET1 , BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET2);
-    	drawLine(BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET1 , BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET1 );
-		drawLine(BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET1 , BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET2);
+    	drawLine(BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET, BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET);
+		drawLine(BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET , BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET);
+    	drawLine(BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET );
+		drawLine(BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET);
 		
     	for (float i = 1; i <= BOARD_SIZE; i++) {
     		drawLine(BOARD_SPACE, (i * BOARD_SPACE) + PIECE_OFFSET, BOARD_SIZE * BOARD_SPACE, (i * BOARD_SPACE) + PIECE_OFFSET);
     		drawLine(i * BOARD_SPACE, BOARD_SPACE + PIECE_OFFSET, i * BOARD_SPACE, (BOARD_SIZE * BOARD_SPACE) + PIECE_OFFSET);
     	}
+    	
+    	drawLine(BOARD_SPACE, MIDDLE_OFFSET, BOARD_WIDTH - BOARD_SPACE, MIDDLE_OFFSET);
+		drawLine(BOARD_SPACE, REPORTBOX_OFFSET , BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET);
+    	drawLine(BOARD_SPACE, REPORTBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, REPORTBOX_OFFSET );
+		drawLine(BOARD_WIDTH - BOARD_SPACE, REPORTBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, MIDDLE_OFFSET);
     }
     
     /**
@@ -192,8 +200,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
      * Renders the currently placed pieces onto the visualizer.
      */
     private void renderPieces() {
-    	for (Integer[] piece : this.pieces) {
-    		placePiece(this.textures[piece[2]], piece[0] * BOARD_SPACE, BOARD_WIDTH - (piece[1] * BOARD_SPACE) + PIECE_OFFSET);
+    	for (Piece piece : this.pieces) {
+    		placePiece(this.textures[piece.player], piece.x * BOARD_SPACE, BOARD_WIDTH - (piece.y * BOARD_SPACE) + PIECE_OFFSET);
     	}
     }
     
@@ -239,7 +247,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		glfwDestroyWindow(this.window);
 		glfwTerminate();
 	}
-	
+
 	@Override
 	public void reportTurn(GameController game, int x, int y, byte value, Collection<String> reports) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -267,16 +275,10 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	@Override
 	public void informMove(int x, int y, byte value) {
 		if (value != 0) {
-			this.pieces.add(new Integer[] {x + 1, y + 1, value - 1});
+			this.pieces.add(new Piece(x + 1, y + 1, value - 1));
 		}
 		else {
-	    	for (int i = 0; i < pieces.size(); i++) {
-	    		Integer[] tmp = pieces.get(i);
-	    		if ((tmp[0] - 1) == x && (tmp[1] - 1) == y) {
-	    			pieces.remove(i);
-	    			break;
-	    		}
-	    	}
+			this.pieces.remove(new Piece(x + 1, y + 1, 0));
 		}
 	}
 	
