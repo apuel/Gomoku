@@ -8,5 +8,9 @@
 	<classpathentry kind="lib" path="lwjgl-3.2.0/lwjgl-glfw-natives-macos.jar"/>
 	<classpathentry kind="lib" path="lwjgl-3.2.0/lwjgl-opengl-natives-macos.jar"/>
 	<classpathentry kind="lib" path="lwjgl-3.2.0/lwjgl-natives-macos.jar"/>
+	<classpathentry kind="lib" path="/Users/eggplant/42student/Gomoku/lwjgl-3.2.0/lwjgl-stb.jar"/>
+	<classpathentry kind="lib" path="/Users/eggplant/42student/Gomoku/lwjgl-3.2.0/lwjgl-stb-natives-macos.jar"/>
+	<classpathentry kind="lib" path="/Users/eggplant/42student/Gomoku/lwjgl-3.2.0/lwjgl-rpmalloc-natives-macos.jar"/>
+	<classpathentry kind="lib" path="/Users/eggplant/42student/Gomoku/lwjgl-3.2.0/lwjgl-rpmalloc.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

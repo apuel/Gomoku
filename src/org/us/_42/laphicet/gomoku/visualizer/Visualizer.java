@@ -59,6 +59,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private long console;
 	private boolean mousePressed = false;
 	
+	private String[] playerNames= new String[2];
+	
 	/**
 	 * Initializes the visualizer window.
 	 */
@@ -79,6 +81,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		
 		textutil.init("./img/font.png", 32, 3);
 
+		// will be replaced once player selection option is available
+		playerNames[0] = "Victini";
+		playerNames[1] = "Claydol";
 	}
 	
 	/**
@@ -229,12 +234,19 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		this.renderBoard();
 		this.renderPieces();
 		this.renderReports();
+		this.renderStats();
 //		glfwMakeContextCurrent(console);
 //		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 //		textutil.drawString("Testing", 150, 150, 4, new Float[]{1.0f, 0.0f, 0.0f});
 //		glfwMakeContextCurrent(window);
         glfwSwapBuffers(this.window);
         glfwSwapBuffers(this.console);
+	}
+	
+	private void renderStats() {
+		textutil.drawString("TURN", 440, 1220, 3, new Float[]{0.0f, 0.0f, 0.0f});
+		textutil.drawString(playerNames[0], 65, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
+		textutil.drawString(playerNames[1], 900 - (playerNames[1].length() * 10), 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
 	}
 	
 	@Override
