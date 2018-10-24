@@ -2,8 +2,8 @@ package org.us._42.laphicet.gomoku.visualizer;
 
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
-import org.us._42.laphicet.gomoku.GameStateReporter;
 import org.us._42.laphicet.gomoku.Gomoku;
+import org.us._42.laphicet.gomoku.GameStateReporter;
 import org.us._42.laphicet.gomoku.PlayerController;
 
 import org.lwjgl.BufferUtils;
@@ -14,18 +14,19 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
 import static org.lwjgl.system.MemoryUtil.*;
 
-import java.awt.FontFormatException;
 import java.awt.image.BufferedImage;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.*;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.imageio.ImageIO;
-
+/**
+ * Visualizer - Object that rendered a 2D space for the board game
+ * Gomoku, a Go variant
+ * 
+ * @author mlu & apuel
+ */
 public class Visualizer implements PlayerController, GameStateReporter {
 	private static final int BOARD_OFFSET = 300;
 	private static final byte BOARD_SIZE = 19;
@@ -35,7 +36,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private static final int STATBOX_OFFSET = 100;
 	private static final int MIDDLE_OFFSET = 250;
 	private static final int REPORTBOX_OFFSET = 50;
-	private static final int TEXTURE_OFFSET = (128/5);
+	private static final int TEXTURE_OFFSET = (128 / 5);
+	private static final int BG_OFFSET_X = (BOARD_WIDTH - (BOARD_SPACE * 2)) / 2;
+	private static final int BG_OFFSET_Y = ((BOARD_WIDTH + BOARD_OFFSET) - (BOARD_SPACE * 2)) / 2;
 	
 	private Set<Piece> pieces = new HashSet<Piece>();
 	private int[] textures = new int[2];
@@ -45,9 +48,10 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private DoubleBuffer mouseX = BufferUtils.createDoubleBuffer(1);
 	private DoubleBuffer mouseY = BufferUtils.createDoubleBuffer(1);
 	
-//	private TextUtil textutil = new TextUtil();
+	private TextUtil textutil = new TextUtil();
 	private GLFWKeyCallback keyCallback;
 	private long window;
+	private long console;
 	private boolean mousePressed = false;
 	
 	/**
@@ -60,21 +64,25 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); 
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 		this.window = glfwCreateWindow(BOARD_WIDTH, BOARD_WIDTH + BOARD_OFFSET, "Gomoku", NULL, NULL);
-		if (this.window == NULL) {
+		this.console = glfwCreateWindow(BOARD_WIDTH, BOARD_WIDTH, "Debug Console", NULL, NULL);
+		if (this.window == NULL || this.console == NULL) {
 			throw new RuntimeException("Failed to create the visualizer window");
 		}
 		
 		this.keyCallback = new KeyCallBack();
 		glfwSetKeyCallback(window, this.keyCallback);
+		
+		textutil.init("./img/font.png", 32, 3);
+
 	}
 	
 	/**
 	 * Displays the visualizer window.
 	 */
-	private void displayWindow() {
-		glfwMakeContextCurrent(this.window);
+	private void displayWindow(long window) {
+		glfwMakeContextCurrent(window);
 		glfwSwapInterval(1);
-		glfwShowWindow(this.window);
+		glfwShowWindow(window);
 	}
 	
 	/**
@@ -139,105 +147,11 @@ public class Visualizer implements PlayerController, GameStateReporter {
     }
     
     /**
-     * Draws a piece on the visualizer.
-     * 
-     * @param texture The texture id to draw.
-     * @param x The absolute x coordinate on the visualizer window.
-     * @param y The absolute y coordinate on the visualizer window.
-     */
-    private void placePiece(int texture, int x, int y) {
-    	glBindTexture(GL_TEXTURE_2D, texture);
-    	
-    	glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        
-    	glEnable(GL_TEXTURE_2D); 
-    	glBegin(GL_QUADS);
-    	{
-    		glTexCoord2f(0, 1);
-    		glVertex2i(x - TEXTURE_OFFSET, y - TEXTURE_OFFSET);
-    		glTexCoord2f(1, 1);
-    		glVertex2i(x + TEXTURE_OFFSET, y - TEXTURE_OFFSET);
-    		glTexCoord2f(1, 0);
-    		glVertex2i(x + TEXTURE_OFFSET, y + TEXTURE_OFFSET);
-    		glTexCoord2f(0, 0);
-    		glVertex2i(x - TEXTURE_OFFSET, y + TEXTURE_OFFSET);
-    	}
-    	glEnd();
-    	glDisable(GL_TEXTURE_2D);
-    	glPopMatrix();
-    }
- 
-    private void renderBackground(int texture, int x, int y) {
-    	glBindTexture(GL_TEXTURE_2D, texture);
-    	
-    	glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        
-    	glEnable(GL_TEXTURE_2D); 
-    	glBegin(GL_QUADS);
-    	{
-    		glTexCoord2f(0, 1);
-    		glVertex2i(50, 50);
-    		glTexCoord2f(1, 1);
-    		glVertex2i(950, 50);
-    		glTexCoord2f(1, 0);
-    		glVertex2i(950, 1250);
-    		glTexCoord2f(0, 0);
-    		glVertex2i(50, 1250);
-    	}
-    	glEnd();
-    	glDisable(GL_TEXTURE_2D);
-    	glPopMatrix();
-    }
-    
-    /**
-     * Initializes a texture from an image.
-     * 
-     * @param path The internal resource path for the image.
-     * @return The GL texture id
-     * @throws IOException If there was an error attempting to read the image.
-     */
-    private BufferedImage getBufferedImage(String path) throws IOException {
-    	InputStream stream = Visualizer.class.getResourceAsStream(path);
-    	BufferedImage image = ImageIO.read(stream);
-    	stream.close();
-    	
-    	return image;
-    }
-    
-    private int initTexture(BufferedImage image) {
-    	int width = image.getWidth();
-    	int height = image.getHeight();
-    	int pixels[] = new int[width * height];
-    	image.getRGB(0, 0, width, height, pixels, 0, width);
-    	
-    	ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * 4);
-    	for(int y = 0; y < height; ++y) {
-    	    for(int x = 0; x < width; ++x) {
-    	        int pixel = pixels[x + y * width];
-    	        buffer.put((byte) ((pixel >> 16) & 0xFF));
-    	        buffer.put((byte) ((pixel >> 8) & 0xFF));
-    	        buffer.put((byte) (pixel & 0xFF));
-    	        buffer.put((byte) ((pixel >> 24) & 0xFF));
-    	    }
-    	}
-    	buffer.flip();
-    	
-    	int texture = glGenTextures(); 
-        glBindTexture(GL_TEXTURE_2D, texture); 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-    	return texture;
-    }
-    
-    /**
      * Renders the currently placed pieces onto the visualizer.
      */
     private void renderPieces() {
     	for (Piece piece : this.pieces) {
-    		placePiece(this.textures[piece.player], piece.x * BOARD_SPACE, BOARD_WIDTH - (piece.y * BOARD_SPACE) + PIECE_OFFSET);
+    		Tools.renderTexture(this.textures[piece.player], piece.x * BOARD_SPACE, BOARD_WIDTH - (piece.y * BOARD_SPACE) + PIECE_OFFSET, TEXTURE_OFFSET, TEXTURE_OFFSET);
     	}
     }
     
@@ -245,21 +159,22 @@ public class Visualizer implements PlayerController, GameStateReporter {
      * Draws the initial visualizer state and initializes token textures.
      */
 	private void beginVisualize() {
+		glfwMakeContextCurrent(window);
 		GL.createCapabilities();
 		
-//		textutil.renderTexture();
+		textutil.initAlphabet();
 		
-//		glMatrixMode(GL_PROJECTION);
+		glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(0, BOARD_WIDTH, 0, BOARD_WIDTH + BOARD_OFFSET, -1, 1);
-//        glMatrixMode(GL_MODELVIEW); 
-		
-		this.textures[0] = initTexture(this.images[0]);
-		this.textures[1] = initTexture(this.images[1]);
-		this.backgroundTexture = initTexture(this.images[2]);
+        glMatrixMode(GL_MODELVIEW); 
+        
+		this.textures[0] = Tools.initTexture(this.images[0], 0, 0, this.images[0].getWidth(), this.images[0].getHeight(), false);
+		this.textures[1] = Tools.initTexture(this.images[1], 0, 0, this.images[1].getWidth(), this.images[1].getHeight(), false);
+		this.backgroundTexture = Tools.initTexture(this.images[2], 0, 0, this.images[2].getWidth(), this.images[2].getHeight(), false);
 		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		renderBackground(this.backgroundTexture, 650, 650);
+		Tools.renderTexture(this.backgroundTexture, BG_OFFSET_X + BOARD_SPACE, BG_OFFSET_Y + BOARD_SPACE, BG_OFFSET_X, BG_OFFSET_Y);
 		renderBoard();
         glfwSwapBuffers(this.window);
 	}
@@ -270,14 +185,14 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	public void start() {
 		init();
 		try {
-			this.images[0] = getBufferedImage("./img/victini.png");
-			this.images[1] = getBufferedImage("./img/claydol.png");
-			this.images[2] = getBufferedImage("./img/field.png");
-//			textutil.init("./ttf/Raleway-Light.ttf");
+			this.images[0] = Tools.getBufferedImage("./img/victini.png");
+			this.images[1] = Tools.getBufferedImage("./img/claydol.png");
+			this.images[2] = Tools.getBufferedImage("./img/field.png");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		displayWindow();
+		displayWindow(this.window);
+		displayWindow(this.console);
 		beginVisualize();
 	}
 	
@@ -293,11 +208,15 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	@Override
 	public void reportTurn(Gomoku game, int x, int y, byte value, Collection<String> reports) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		renderBackground(this.backgroundTexture, 650, 650);
+		Tools.renderTexture(this.backgroundTexture, BG_OFFSET_X + BOARD_SPACE, BG_OFFSET_Y + BOARD_SPACE, BG_OFFSET_X, BG_OFFSET_Y);
 		renderBoard();
 		renderPieces();
-//		textutil.drawText("asdsdsdsdsdsdsdsdsdsdsdsd", 100, 100);
+//		glfwMakeContextCurrent(console);
+//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		textutil.drawString("Testing", 150, 150, 4, new Float[]{1.0f, 0.0f, 0.0f});
+//		glfwMakeContextCurrent(window);
         glfwSwapBuffers(this.window);
+        glfwSwapBuffers(this.console);
 	}
 	
 	@Override
