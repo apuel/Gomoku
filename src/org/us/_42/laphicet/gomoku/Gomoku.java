@@ -13,7 +13,7 @@ public class Gomoku {
 	private byte[][] board = new byte[BOARD_LENGTH][BOARD_LENGTH];
 	
 	private GameStateReporter reporter;
-	private List<String> reports = new ArrayList<String>();
+	private List<String> logs = new ArrayList<String>();
 	
 	private PlayerController[] players = new PlayerController[PLAYER_COUNT];
 	private Set<PlayerController> set = new HashSet<PlayerController>();
@@ -120,8 +120,8 @@ public class Gomoku {
 			int v2 = this.getPiece(x + (dx * 2), y + (dy * 2));
 			
 			if (v1 > 0 && v1 != value && v2 > 0 && v2 != value) {
-				this.reports.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v1 - 1].name((byte)v1), x + (dx * 1), y + (dy * 1)));
-				this.reports.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v2 - 1].name((byte)v2), x + (dx * 2), y + (dy * 2)));
+				this.logs.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v1 - 1].name((byte)v1), x + (dx * 1), y + (dy * 1)));
+				this.logs.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v2 - 1].name((byte)v2), x + (dx * 2), y + (dy * 2)));
 				this.board[y + (dy * 1)][x + (dx * 1)] = 0;
 				this.board[y + (dy * 2)][x + (dx * 2)] = 0;
 				this.captures[this.current]++;
@@ -176,7 +176,7 @@ public class Gomoku {
 			int y = coords[1];
 			
 			this.board[y][x] = value;
-			this.reports.add(String.format("%s placed a piece at %d, %d.", player.name(value), x, y));
+			this.logs.add(String.format("%s placed a piece at %d, %d.", player.name(value), x, y));
 			
 			for (PlayerController p : this.set) {
 				p.informMove(x, y, value);
@@ -185,7 +185,7 @@ public class Gomoku {
 			this.applyCaptures(x, y, value);
 			if (captures >= CAPTURES_TO_WIN) {
 				this.winner = value;
-				this.reports.add(String.format("%s has captured %d times and won!", player.name(value), captures));
+				this.logs.add(String.format("%s has captured %d times and won!", player.name(value), captures));
 			}
 			else {
 				//If there is 5 in a row, check if it is possible to break it within the next turn
@@ -193,9 +193,9 @@ public class Gomoku {
 			}
 			
 			if (this.reporter != null) {
-				this.reporter.reportTurn(this, x, y, value, this.reports);
+				this.reporter.logTurn(this, x, y, value, this.logs);
 			}
-			this.reports.clear();
+			this.logs.clear();
 			
 			this.current = (this.current + 1) % PLAYER_COUNT;
 		}
@@ -247,7 +247,7 @@ public class Gomoku {
 				}
 			}
 			
-			reports.clear();
+			this.logs.clear();
 			this.current = 0;
 			this.winner = 0;
 			this.abort = false;

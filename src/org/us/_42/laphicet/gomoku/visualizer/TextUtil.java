@@ -64,7 +64,10 @@ public class TextUtil {
 		int newHeight = (int) (height * (size / SCALE));
 		glColor3f(color[0], color[1], color[2]);
 		for (int i = 0; i < line.length(); i++) {
-			Tools.renderTexture(alphabet[line.charAt(i) - 33], x, y, newWidth, newHeight);
+			char c = line.charAt(i);
+			if (c >= 33 && c <= 126) {
+				Tools.renderTexture(alphabet[line.charAt(i) - 33], x, y, newWidth, newHeight);
+			}
 			x += newWidth;
 		}
 		glColor3f(1.0f, 1.0f, 1.0f);

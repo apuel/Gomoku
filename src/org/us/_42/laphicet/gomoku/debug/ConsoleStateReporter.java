@@ -7,7 +7,7 @@ import org.us._42.laphicet.gomoku.Gomoku;
 
 public class ConsoleStateReporter implements GameStateReporter {
 	@Override
-	public void reportTurn(Gomoku game, int x, int y, byte piece, Collection<String> reports) {
+	public void logTurn(Gomoku game, int x, int y, byte piece, Collection<String> logs) {
 		System.out.println("[Game State]\n---------------------------------------------------------");
 		for (int yi = 0; yi < Gomoku.BOARD_LENGTH; yi++) {
 			for (int xi = 0; xi < Gomoku.BOARD_LENGTH; xi++) {
@@ -23,7 +23,7 @@ public class ConsoleStateReporter implements GameStateReporter {
 			System.out.print("\n");
 		}
 		
-		for (String report : reports) {
+		for (String report : logs) {
 			System.out.println("[REPORT] " + report);
 		}
 		System.out.flush();

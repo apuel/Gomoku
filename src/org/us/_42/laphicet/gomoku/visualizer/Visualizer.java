@@ -17,8 +17,12 @@ import static org.lwjgl.system.MemoryUtil.*;
 import java.awt.image.BufferedImage;
 
 import java.nio.*;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 
 /**
@@ -41,6 +45,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private static final int BG_OFFSET_Y = ((BOARD_WIDTH + BOARD_OFFSET) - (BOARD_SPACE * 2)) / 2;
 	
 	private Set<Piece> pieces = new HashSet<Piece>();
+	private List<Entry<Float[],String>> report = new ArrayList<Entry<Float[],String>>();
 	private int[] textures = new int[2];
 	private int backgroundTexture;
 	private BufferedImage[] images = new BufferedImage[3];
@@ -205,18 +210,39 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		glfwTerminate();
 	}
 	
-	@Override
-	public void reportTurn(Gomoku game, int x, int y, byte value, Collection<String> reports) {
+	private void renderReports() {
+		int x = 60;
+		int y = 60;
+		Entry<Float[],String> msg = null;
+		for (int i = 0; i < 10; i++) {
+			if (report.size() > i) {
+				msg = report.get(report.size() - 1 - i);
+				textutil.drawString(msg.getValue(), x, y, 1, msg.getKey());
+				y = y + 14;
+			}
+		}
+	}
+	
+	private void updateBoard() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		Tools.renderTexture(this.backgroundTexture, BG_OFFSET_X + BOARD_SPACE, BG_OFFSET_Y + BOARD_SPACE, BG_OFFSET_X, BG_OFFSET_Y);
-		renderBoard();
-		renderPieces();
+		this.renderBoard();
+		this.renderPieces();
+		this.renderReports();
 //		glfwMakeContextCurrent(console);
 //		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		textutil.drawString("Testing", 150, 150, 4, new Float[]{1.0f, 0.0f, 0.0f});
+//		textutil.drawString("Testing", 150, 150, 4, new Float[]{1.0f, 0.0f, 0.0f});
 //		glfwMakeContextCurrent(window);
         glfwSwapBuffers(this.window);
         glfwSwapBuffers(this.console);
+	}
+	
+	@Override
+	public void logTurn(Gomoku game, int x, int y, byte value, Collection<String> logs) {
+		for (String log : logs) {
+			this.report.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 1.0f, 1.0f}, log));
+		}
+		this.updateBoard();
 	}
 	
 	@Override
@@ -232,7 +258,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	@Override
 	public void report(String message) {
 		// TODO Auto-generated method stub
-		
+		this.report.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 0.0f, 0.0f}, message));
+		this.updateBoard();
 	}
 	
 	@Override
