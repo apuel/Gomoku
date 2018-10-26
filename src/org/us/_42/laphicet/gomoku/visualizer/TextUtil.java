@@ -15,23 +15,20 @@ public class TextUtil {
 	
 	private BufferedImage fontImage = null;
 	private int[] alphabet = new int[127 - 33];
-	private int trueWidth;
-	private int width;
-	private int height;
-	private static final float SCALE = 10f;
+	public final int trueWidth;
+	public final int width;
+	public final int height;
+	public final float SCALE = 10f;
 	
 	/**
+	 * @throws IOException 
 	 * 
 	 */
-	public void init(String path, int elementInRow, int elementInColumn) {
-		try {
+	public TextUtil(String path, int elementInRow, int elementInColumn) throws IOException {
 			fontImage = Tools.getBufferedImage(path);
 			trueWidth = fontImage.getWidth();
 			width = (trueWidth - (elementInRow + 1)) / elementInRow;
 			height = (fontImage.getHeight() - (elementInColumn + 1)) / elementInColumn;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 	
 	/**
@@ -59,7 +56,7 @@ public class TextUtil {
 	 * @param size
 	 * @param color
 	 */
-	public void drawString(String line, int x, int y, int size, Float[] color) {
+	public void drawString(String line, int x, int y, float size, Float[] color) {
 		int newWidth = (int) (width * (size / SCALE));
 		int newHeight = (int) (height * (size / SCALE));
 		glColor3f(color[0], color[1], color[2]);

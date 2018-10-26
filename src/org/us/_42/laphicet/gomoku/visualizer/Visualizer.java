@@ -15,7 +15,7 @@ import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
 import static org.lwjgl.system.MemoryUtil.*;
 
 import java.awt.image.BufferedImage;
-
+import java.io.IOException;
 import java.nio.*;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -46,6 +46,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	
 	private Set<Piece> pieces = new HashSet<Piece>();
 	private List<Entry<Float[],String>> report = new ArrayList<Entry<Float[],String>>();
+	private List<Entry<Float[],String>> debug = new ArrayList<Entry<Float[],String>>();
 	private int[] textures = new int[2];
 	private int backgroundTexture;
 	private BufferedImage[] images = new BufferedImage[3];
@@ -53,7 +54,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private DoubleBuffer mouseX = BufferUtils.createDoubleBuffer(1);
 	private DoubleBuffer mouseY = BufferUtils.createDoubleBuffer(1);
 	
-	private TextUtil textutil = new TextUtil();
+	private TextUtil textutil;
 	private GLFWKeyCallback keyCallback;
 	private long window;
 	private long console;
@@ -79,7 +80,14 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		this.keyCallback = new KeyCallBack();
 		glfwSetKeyCallback(window, this.keyCallback);
 		
-		textutil.init("./img/font.png", 32, 3);
+//		textutil.init("./img/font.png", 32, 3);
+		
+		try {
+			this.textutil = new TextUtil("./img/font.png", 32, 3);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		// will be replaced once player selection option is available
 		playerNames[0] = "Victini";
@@ -165,19 +173,22 @@ public class Visualizer implements PlayerController, GameStateReporter {
     	}
     }
     
+    private void setupGL(long screen, int x, int y) {
+    	glfwMakeContextCurrent(screen);
+    	GL.createCapabilities();
+		glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, x, 0, y, -1, 1);
+        glMatrixMode(GL_MODELVIEW); 
+        textutil.initAlphabet();
+    }
+    
     /**
      * Draws the initial visualizer state and initializes token textures.
      */
 	private void beginVisualize() {
-		glfwMakeContextCurrent(window);
-		GL.createCapabilities();
-		
-		textutil.initAlphabet();
-		
-		glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(0, BOARD_WIDTH, 0, BOARD_WIDTH + BOARD_OFFSET, -1, 1);
-        glMatrixMode(GL_MODELVIEW); 
+		setupGL(console, BOARD_WIDTH, BOARD_WIDTH);
+		setupGL(window, BOARD_WIDTH, BOARD_WIDTH + BOARD_OFFSET);
         
 		this.textures[0] = Tools.initTexture(this.images[0], 0, 0, this.images[0].getWidth(), this.images[0].getHeight(), false);
 		this.textures[1] = Tools.initTexture(this.images[1], 0, 0, this.images[1].getWidth(), this.images[1].getHeight(), false);
@@ -221,40 +232,59 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		Entry<Float[],String> msg = null;
 		for (int i = 0; i < 10; i++) {
 			if (report.size() > i) {
-				msg = report.get(report.size() - 1 - i);
-				textutil.drawString(msg.getValue(), x, y, 1, msg.getKey());
+				msg = this.report.get(report.size() - 1 - i);
+				this.textutil.drawString(msg.getValue(), x, y, 1, msg.getKey());
 				y = y + 14;
 			}
 		}
 	}
 	
+	private void renderDebug() {
+		int x = 50;
+		int y = 50;
+		Entry<Float[],String> msg = null;
+		for (int i = 0; i < 65; i++) {
+			if (debug.size() > i) {
+				msg = this.debug.get(debug.size() - 1 - i);
+				this.textutil.drawString(">", x, y, 1, new Float[]{ 0.0f, 1.0f, 0.0f});
+				this.textutil.drawString(msg.getValue(), x + 20, y, 1, msg.getKey());
+				y = y + 14;
+			}
+		}
+	}
+	
+	private void updateConsole() {
+		glfwMakeContextCurrent(console);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		this.renderDebug();
+        glfwSwapBuffers(this.console);
+	}
+	
 	private void updateBoard() {
+		glfwMakeContextCurrent(window);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		Tools.renderTexture(this.backgroundTexture, BG_OFFSET_X + BOARD_SPACE, BG_OFFSET_Y + BOARD_SPACE, BG_OFFSET_X, BG_OFFSET_Y);
 		this.renderBoard();
 		this.renderPieces();
 		this.renderReports();
 		this.renderStats();
-//		glfwMakeContextCurrent(console);
-//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//		textutil.drawString("Testing", 150, 150, 4, new Float[]{1.0f, 0.0f, 0.0f});
-//		glfwMakeContextCurrent(window);
-        glfwSwapBuffers(this.window);
-        glfwSwapBuffers(this.console);
+		glfwSwapBuffers(this.window);
 	}
 	
 	private void renderStats() {
 		textutil.drawString("TURN", 440, 1220, 3, new Float[]{0.0f, 0.0f, 0.0f});
-		textutil.drawString(playerNames[0], 65, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
-		textutil.drawString(playerNames[1], 900 - (playerNames[1].length() * 10), 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
+		textutil.drawString(playerNames[0], 70, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
+		textutil.drawString(playerNames[1], (int)(960 - (playerNames[1].length() * (textutil.width * 2 / textutil.SCALE))), 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
 	}
 	
 	@Override
 	public void logTurn(Gomoku game, int x, int y, byte value, Collection<String> logs) {
 		for (String log : logs) {
 			this.report.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 1.0f, 1.0f}, log));
+			this.debug.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 1.0f, 1.0f}, log));
 		}
 		this.updateBoard();
+		this.updateConsole();
 	}
 	
 	@Override
@@ -271,7 +301,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	public void report(String message) {
 		// TODO Auto-generated method stub
 		this.report.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 0.0f, 0.0f}, message));
+		this.debug.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 0.0f, 0.0f}, message));
 		this.updateBoard();
+		this.updateConsole();
 	}
 	
 	@Override
