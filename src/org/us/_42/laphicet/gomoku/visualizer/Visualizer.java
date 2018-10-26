@@ -47,9 +47,15 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private Set<Piece> pieces = new HashSet<Piece>();
 	private List<Entry<Float[],String>> report = new ArrayList<Entry<Float[],String>>();
 	private List<Entry<Float[],String>> debug = new ArrayList<Entry<Float[],String>>();
-	private int[] textures = new int[2];
+	private int[] textures = new int[8];
 	private int backgroundTexture;
-	private BufferedImage[] images = new BufferedImage[3];
+	private BufferedImage bgBuffer = null;
+	private BufferedImage[] images = new BufferedImage[8];
+	private int[] playerPiece = new int[2];
+	
+	private int currentPlayerPickingChar = 0;
+	private boolean[] availableChar = new boolean[]{false, false, false, false, false, false, false, false};
+	private static final String[] pieceName = new String[] {"Victini", "Claydol", "Slowpoke", "Cyndaquil", "Flareon", "Porygon2", "Paras", "Charmander"};
 	
 	private DoubleBuffer mouseX = BufferUtils.createDoubleBuffer(1);
 	private DoubleBuffer mouseY = BufferUtils.createDoubleBuffer(1);
@@ -88,10 +94,6 @@ public class Visualizer implements PlayerController, GameStateReporter {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-		// will be replaced once player selection option is available
-		playerNames[0] = "Victini";
-		playerNames[1] = "Claydol";
 	}
 	
 	/**
@@ -103,6 +105,17 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		glfwShowWindow(window);
 	}
 	
+	private void pickChar(double x, double y) {
+		for (int i = 0, x1 = 200, x2 = 240; i < 8; i++, x1+= 80, x2 += 80) {
+			if (x >= x1 && x <= x2 && y >= 630 && y < 670 && !availableChar[i]) {
+				this.playerPiece[currentPlayerPickingChar] = this.textures[i];
+				this.playerNames[currentPlayerPickingChar] = this.pieceName[i];
+				availableChar[i] = true;
+				currentPlayerPickingChar++;
+				System.out.println("Selected " + this.pieceName[i]); 
+			}
+		}
+	}
 	/**
 	 * Scans for key changes on the GL window.
 	 * 
@@ -112,14 +125,26 @@ public class Visualizer implements PlayerController, GameStateReporter {
     	if (KeyCallBack.isKeyDown(GLFW_KEY_ESCAPE)) {
     		glfwSetWindowShouldClose(this.window, true);
     	}
-    	if (!this.mousePressed && glfwGetMouseButton(this.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-    		glfwGetCursorPos(this.window, this.mouseX, this.mouseY);
-    		coords[0] = (int)Math.round(this.mouseX.get(0)/BOARD_SPACE) - 1;
-    		coords[1] = (int)Math.round(this.mouseY.get(0)/BOARD_SPACE) - (1 + (PIECE_OFFSET / BOARD_SPACE));
-    		this.mousePressed = true;
+    	if (currentPlayerPickingChar > 1) {
+    		if (!this.mousePressed && glfwGetMouseButton(this.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+    			glfwGetCursorPos(this.window, this.mouseX, this.mouseY);
+    			coords[0] = (int)Math.round(this.mouseX.get(0)/BOARD_SPACE) - 1;
+    			coords[1] = (int)Math.round(this.mouseY.get(0)/BOARD_SPACE) - (1 + (PIECE_OFFSET / BOARD_SPACE));
+    			this.mousePressed = true;
+    		}
+    		if (this.mousePressed && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+    			this.mousePressed = false;
+    		}
     	}
-    	if (this.mousePressed && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
-    		this.mousePressed = false;
+    	else {
+    		if (!this.mousePressed && glfwGetMouseButton(this.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+    			glfwGetCursorPos(this.window, this.mouseX, this.mouseY);
+    			this.pickChar(this.mouseX.get(0), this.mouseY.get(0));
+    			this.mousePressed = true;
+    		}
+    		if (this.mousePressed && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+    			this.mousePressed = false;
+    		}
     	}
     }
     
@@ -169,7 +194,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
      */
     private void renderPieces() {
     	for (Piece piece : this.pieces) {
-    		Tools.renderTexture(this.textures[piece.player], piece.x * BOARD_SPACE, BOARD_WIDTH - (piece.y * BOARD_SPACE) + PIECE_OFFSET, TEXTURE_OFFSET, TEXTURE_OFFSET);
+    		Tools.renderTexture(this.playerPiece[piece.player], piece.x * BOARD_SPACE, BOARD_WIDTH - (piece.y * BOARD_SPACE) + PIECE_OFFSET, TEXTURE_OFFSET, TEXTURE_OFFSET);
     	}
     }
     
@@ -186,35 +211,62 @@ public class Visualizer implements PlayerController, GameStateReporter {
     /**
      * Draws the initial visualizer state and initializes token textures.
      */
-	private void beginVisualize() {
-		setupGL(console, BOARD_WIDTH, BOARD_WIDTH);
-		setupGL(window, BOARD_WIDTH, BOARD_WIDTH + BOARD_OFFSET);
-        
-		this.textures[0] = Tools.initTexture(this.images[0], 0, 0, this.images[0].getWidth(), this.images[0].getHeight(), false);
-		this.textures[1] = Tools.initTexture(this.images[1], 0, 0, this.images[1].getWidth(), this.images[1].getHeight(), false);
-		this.backgroundTexture = Tools.initTexture(this.images[2], 0, 0, this.images[2].getWidth(), this.images[2].getHeight(), false);
-		
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		Tools.renderTexture(this.backgroundTexture, BG_OFFSET_X + BOARD_SPACE, BG_OFFSET_Y + BOARD_SPACE, BG_OFFSET_X, BG_OFFSET_Y);
-		renderBoard();
-        glfwSwapBuffers(this.window);
+	private void loadCharacters() {
+		for (int i = 0; i < 8; i++) {
+			this.textures[i] = Tools.initTexture(this.images[i], 0, 0, this.images[i].getWidth(), this.images[i].getHeight(), false);
+		}
+		this.backgroundTexture = Tools.initTexture(this.bgBuffer, 0, 0, this.bgBuffer.getWidth(), this.bgBuffer.getHeight(), false);
 	}
 	
+	private void charSelect() {
+		while (currentPlayerPickingChar < 2) {
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			if (currentPlayerPickingChar == 0) {
+				this.textutil.drawString("Select Player 1", BOARD_WIDTH / 2 - 180, BOARD_WIDTH - 150, 3, new Float[]{ 0.0f, 1.0f, 0.0f});
+				for (int i = 0, x = 220, y = 650; i < 8; i++, x+= 80) {
+					Tools.renderTexture(this.textures[i], x, y, TEXTURE_OFFSET, TEXTURE_OFFSET);
+				}
+			}
+			else {
+				this.textutil.drawString("Select Player 2", BOARD_WIDTH / 2 - 180, BOARD_WIDTH - 150, 3, new Float[]{ 0.0f, 1.0f, 0.0f});
+				for (int i = 0, x = 220, y = 650; i < 8; i++, x+= 80) {
+					Tools.renderTexture(this.textures[i], x, y, TEXTURE_OFFSET, TEXTURE_OFFSET);
+				}
+			}
+        	glfwSwapBuffers(this.window);
+        	glfwPollEvents();
+			scan(new int[]{});
+		}
+	}
 	/**
 	 * Initialize and display the visualizer window and its initial states.
 	 */
 	public void start() {
-		init();
+		this.init();
 		try {
 			this.images[0] = Tools.getBufferedImage("./img/victini.png");
 			this.images[1] = Tools.getBufferedImage("./img/claydol.png");
-			this.images[2] = Tools.getBufferedImage("./img/field.png");
+			this.images[2] = Tools.getBufferedImage("./img/slowpoke.png");
+			this.images[3] = Tools.getBufferedImage("./img/cyndaquil.png");
+			this.images[4] = Tools.getBufferedImage("./img/flareon.png");
+			this.images[5] = Tools.getBufferedImage("./img/porygon2.png");
+			this.images[6] = Tools.getBufferedImage("./img/paras.png");
+			this.images[7] = Tools.getBufferedImage("./img/charmander.png");
+			this.bgBuffer = Tools.getBufferedImage("./img/field.png");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		displayWindow(this.window);
-		displayWindow(this.console);
-		beginVisualize();
+		System.out.println("Test");
+		this.displayWindow(this.window);
+		this.displayWindow(this.console);
+		this.setupGL(console, BOARD_WIDTH, BOARD_WIDTH);
+		this.setupGL(window, BOARD_WIDTH, BOARD_WIDTH + BOARD_OFFSET);
+		
+		this.loadCharacters();
+		this.charSelect();
+		
+//		beginVisualize();
+		updateBoard();
 	}
 	
 	/**
@@ -241,14 +293,14 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	
 	private void renderDebug() {
 		int x = 50;
-		int y = 50;
+		int y = 950;
 		Entry<Float[],String> msg = null;
 		for (int i = 0; i < 65; i++) {
 			if (debug.size() > i) {
 				msg = this.debug.get(debug.size() - 1 - i);
 				this.textutil.drawString(">", x, y, 1, new Float[]{ 0.0f, 1.0f, 0.0f});
 				this.textutil.drawString(msg.getValue(), x + 20, y, 1, msg.getKey());
-				y = y + 14;
+				y = y - 14;
 			}
 		}
 	}
@@ -290,10 +342,10 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	@Override
 	public String name(byte value) {
 		if (value == 1) {
-			return "Victini";
+			return (playerNames[0]);
 		}
 		else {
-			return "Claydol";
+			return (playerNames[1]);
 		}
 	}
 	
