@@ -3,6 +3,7 @@ package org.us._42.laphicet.gomoku.visualizer;
 import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.lang.management.ManagementFactory;
+import java.util.Arrays;
 
 import org.us._42.laphicet.gomoku.GameStateReporter;
 import org.us._42.laphicet.gomoku.Gomoku;
@@ -15,6 +16,13 @@ public class Main {
 		}
 	}
 	
+	/**
+	 * Attempts to verify that the program is running on the main JVM thread.
+	 * If verification fails or the program is not running on the first thread,
+	 * it will launch a new copy of itself on the first thread.
+	 * 
+	 * The newly launched application inherits IO from the current one, so System.out will stay in tact.
+	 */
 	private static void XstartOnFirstThread() {
 		try {
 			String os = System.getProperty("os.name");
@@ -58,7 +66,7 @@ public class Main {
 	}
 	
 	public static void main(String... args) {
-		if (args.length < 1 || !(args[0].equals("-ignoreThreadCheck"))) {
+		if (Arrays.asList(args).contains("-ignoreThreadCheck")) {
 			XstartOnFirstThread();
 		}
 		

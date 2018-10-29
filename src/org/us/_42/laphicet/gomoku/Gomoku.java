@@ -19,7 +19,9 @@ public class Gomoku {
 	private Set<PlayerController> set = new HashSet<PlayerController>();
 	
 	private int[] captures = new int[PLAYER_COUNT];
-	private int current = 0;
+	private int[] placed = new int[PLAYER_COUNT];
+	
+	private int turn = 0;
 	private int winner = 0;
 	
 	private boolean abort = false;
@@ -57,6 +59,41 @@ public class Gomoku {
 	}
 	
 	/**
+	 * Gets the current turn.
+	 * 
+	 * @return The current turn.
+	 */
+	public int getTurn() {
+		return (this.turn);
+	}
+	
+	/**
+	 * Gets the number of captures a certain player has done.
+	 * 
+	 * @param value The player's value.
+	 * @return The number of successful captures.
+	 */
+	public int getCaptureCount(byte value) {
+		if (value > 0 && value <= PLAYER_COUNT) {
+			return (this.captures[value - 1]);
+		}
+		return (-1);
+	}
+	
+	/**
+	 * Gets the number of pieces that a player currently has placed.
+	 * 
+	 * @param value The player's value.
+	 * @return The number of currently placed pieces.
+	 */
+	public int getPiecesPlaced(byte value) {
+		if (value > 0 && value <= PLAYER_COUNT) {
+			return (this.placed[value - 1]);
+		}
+		return (-1);
+	}
+	
+	/**
 	 * Returns the value for the piece at the location.
 	 * 
 	 * @param x The x coordinate for the piece.
@@ -79,7 +116,7 @@ public class Gomoku {
 	 * @return Whether or not the move is valid.
 	 */
 	private boolean validateMove(int x, int y, int value) {
-		PlayerController player = this.players[this.current];
+		PlayerController player = this.players[this.turn % PLAYER_COUNT];
 		int tmp = getPiece(x, y);
 		
 		if (tmp < 0) {
@@ -113,7 +150,7 @@ public class Gomoku {
 	 * @param dy The y direction to attempt a capture in.
 	 */
 	private void applyCapture(int x, int y, byte value, int dx, int dy) {
-		PlayerController player = this.players[this.current];
+		PlayerController player = this.players[this.turn % PLAYER_COUNT];
 		
 		if (this.getPiece(x + (dx * 3), y + (dy * 3)) == value) {
 			int v1 = this.getPiece(x + (dx * 1), y + (dy * 1));
@@ -122,9 +159,11 @@ public class Gomoku {
 			if (v1 > 0 && v1 != value && v2 > 0 && v2 != value) {
 				this.logs.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v1 - 1].name((byte)v1), x + (dx * 1), y + (dy * 1)));
 				this.logs.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v2 - 1].name((byte)v2), x + (dx * 2), y + (dy * 2)));
+				this.placed[v1 - 1]--;
+				this.placed[v2 - 1]--;
 				this.board[y + (dy * 1)][x + (dx * 1)] = 0;
 				this.board[y + (dy * 2)][x + (dx * 2)] = 0;
-				this.captures[this.current]++;
+				this.captures[this.turn % PLAYER_COUNT]++;
 				
 				for (PlayerController p : this.set) {
 					p.informMove(x + (dx * 1), y + (dy * 1), (byte)0);
@@ -160,9 +199,9 @@ public class Gomoku {
 		int[] coords = new int[2];
 		
 		if (this.winner == 0 && !(this.abort)) {
-			PlayerController player = this.players[this.current];
-			byte value = (byte)(this.current + 1);
-			int captures = this.captures[this.current];
+			PlayerController player = this.players[this.turn % PLAYER_COUNT];
+			byte value = (byte)((this.turn % PLAYER_COUNT) + 1);
+			int captures = this.captures[this.turn % PLAYER_COUNT];
 			
 			coords[0] = -1; coords[1] = -1;
 			if (!player.getMove(this, value, coords)) {
@@ -176,6 +215,7 @@ public class Gomoku {
 			int y = coords[1];
 			
 			this.board[y][x] = value;
+			this.placed[this.turn % PLAYER_COUNT]++;
 			this.logs.add(String.format("%s placed a piece at %d, %d.", player.name(value), x, y));
 			
 			for (PlayerController p : this.set) {
@@ -197,7 +237,7 @@ public class Gomoku {
 			}
 			this.logs.clear();
 			
-			this.current = (this.current + 1) % PLAYER_COUNT;
+			this.turn++;
 		}
 	}
 	
@@ -248,7 +288,7 @@ public class Gomoku {
 			}
 			
 			this.logs.clear();
-			this.current = 0;
+			this.turn = 0;
 			this.winner = 0;
 			this.abort = false;
 		}

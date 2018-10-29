@@ -4,7 +4,7 @@ public interface PlayerController {
 	/**
 	 * Returns a name for the Player.
 	 * 
-	 * @param value An value representing the player's piece.
+	 * @param value A value representing the player's piece.
 	 * This can be used to implement multiple players within one PlayerController.
 	 * @return A name.
 	 */
