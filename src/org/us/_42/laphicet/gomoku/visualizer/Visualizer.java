@@ -11,7 +11,6 @@ import org.lwjgl.BufferUtils;
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
 import static org.lwjgl.system.MemoryUtil.*;
 
 import java.awt.image.BufferedImage;
@@ -206,6 +205,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
         	glfwSwapBuffers(this.window);
         	glfwPollEvents();
 			scan(new int[]{});
+			if (glfwWindowShouldClose(this.window)) {
+				System.exit(0);
+			}
 		}
 	}
 	
@@ -245,7 +247,6 @@ public class Visualizer implements PlayerController, GameStateReporter {
 			e.printStackTrace();
 		}
 		Renderer.displayWindow(this.window);
-		Renderer.displayWindow(this.console);
 		this.setupGL(console, BOARD_WIDTH, BOARD_WIDTH);
 		this.setupGL(window, BOARD_WIDTH, BOARD_WIDTH + BOARD_OFFSET);
 		
@@ -287,10 +288,32 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	 * 
 	 * @param coords The output buffer for game-board coordinates.
 	 */
+	private boolean toggleDebug;
+	private boolean debugPressed;
     private void scan(int[] coords){
     	if (KeyCallBack.isKeyDown(GLFW_KEY_ESCAPE)) {
     		glfwSetWindowShouldClose(this.window, true);
     	}
+    	
+    	if (!debugPressed && KeyCallBack.isKeyDown(GLFW_KEY_TAB)) {
+    		if (!toggleDebug) {
+    			Renderer.displayWindow(this.console);
+    			this.updateConsole();
+    			glfwMakeContextCurrent(this.window);
+    			glfwFocusWindow(this.window);
+    			toggleDebug = true;
+    		}
+    		else {
+    			glfwHideWindow(this.console);
+    			toggleDebug = false;
+    		}
+    		debugPressed = true;
+    	}
+    	else if (debugPressed && !KeyCallBack.isKeyDown(GLFW_KEY_TAB)){
+    		debugPressed = false;
+    	}
+    	
+    	
     	if (currentPlayerPickingChar > 1) {
     		if (!this.mousePressed && glfwGetMouseButton(this.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
     			glfwGetCursorPos(this.window, this.mouseX, this.mouseY);
