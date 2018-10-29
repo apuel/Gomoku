@@ -69,4 +69,18 @@ public class TextUtil {
 		}
 		glColor3f(1.0f, 1.0f, 1.0f);
 	}
+	
+	public void drawStringBackwards(String line, int x, int y, float size, Float[] color) {
+		int newWidth = (int) (width * (size / SCALE));
+		int newHeight = (int) (height * (size / SCALE));
+		glColor3f(color[0], color[1], color[2]);
+		for (int i = line.length() - 1; i >= 0; i--) {
+			char c = line.charAt(i);
+			x -= newWidth;
+			if (c >= 33 && c <= 126) {
+				Renderer.renderTexture(alphabet[line.charAt(i) - 33], x, y, newWidth, newHeight);
+			}
+		}
+		glColor3f(1.0f, 1.0f, 1.0f);
+	}
 }

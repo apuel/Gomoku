@@ -64,7 +64,7 @@ public class Gomoku {
 	 * @return The current turn.
 	 */
 	public int getTurn() {
-		return (this.turn);
+		return (this.turn + 1);
 	}
 	
 	/**
@@ -73,7 +73,7 @@ public class Gomoku {
 	 * @param value The player's value.
 	 * @return The number of successful captures.
 	 */
-	public int getCaptureCount(byte value) {
+	public int getCaptureCount(int value) {
 		if (value > 0 && value <= PLAYER_COUNT) {
 			return (this.captures[value - 1]);
 		}
@@ -86,7 +86,7 @@ public class Gomoku {
 	 * @param value The player's value.
 	 * @return The number of currently placed pieces.
 	 */
-	public int getPiecesPlaced(byte value) {
+	public int getPiecesPlaced(int value) {
 		if (value > 0 && value <= PLAYER_COUNT) {
 			return (this.placed[value - 1]);
 		}
@@ -120,12 +120,12 @@ public class Gomoku {
 		int tmp = getPiece(x, y);
 		
 		if (tmp < 0) {
-			player.report("Coordinates not in bounds!");
+			player.report(this, "Coordinates not in bounds!");
 			return (false);
 		}
 		
 		if (tmp != 0) {
-			player.report("There is already a piece in that position!");
+			player.report(this, "There is already a piece in that position!");
 			return (false);
 		}
 		
@@ -166,8 +166,8 @@ public class Gomoku {
 				this.captures[this.turn % PLAYER_COUNT]++;
 				
 				for (PlayerController p : this.set) {
-					p.informMove(x + (dx * 1), y + (dy * 1), (byte)0);
-					p.informMove(x + (dx * 2), y + (dy * 2), (byte)0);
+					p.informMove(this, x + (dx * 1), y + (dy * 1), (byte)0);
+					p.informMove(this, x + (dx * 2), y + (dy * 2), (byte)0);
 				}
 			}
 		}
@@ -219,7 +219,7 @@ public class Gomoku {
 			this.logs.add(String.format("%s placed a piece at %d, %d.", player.name(value), x, y));
 			
 			for (PlayerController p : this.set) {
-				p.informMove(x, y, value);
+				p.informMove(this, x, y, value);
 			}
 			
 			this.applyCaptures(x, y, value);

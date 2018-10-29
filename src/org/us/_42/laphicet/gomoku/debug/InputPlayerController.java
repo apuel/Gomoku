@@ -15,13 +15,13 @@ public class InputPlayerController implements PlayerController {
 	}
 	
 	@Override
-	public void report(String message) {
+	public void report(Gomoku game, String message) {
 		System.err.println(message);
 		System.err.flush();
 	}
 	
 	@Override
-	public void informMove(int x, int y, byte value) { }
+	public void informMove(Gomoku game, int x, int y, byte value) { }
 	
 	@Override
 	public boolean getMove(Gomoku game, byte piece, int[] coords) {
@@ -37,7 +37,7 @@ public class InputPlayerController implements PlayerController {
 					coords[1] = y;
 				}
 				catch (NumberFormatException e) {
-					this.report("Failed to parse coordinates from input!");
+					this.report(game, "Failed to parse coordinates from input!");
 					return (false);
 				}
 			}

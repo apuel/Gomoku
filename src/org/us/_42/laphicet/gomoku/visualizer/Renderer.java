@@ -160,8 +160,7 @@ public final class Renderer {
 	 * Displays the visualizer window.
 	 */
 	public static void displayWindow(long window) {
-		glfwMakeContextCurrent(window);
-		glfwSwapInterval(1);
+
 		glfwShowWindow(window);
 	}
 }

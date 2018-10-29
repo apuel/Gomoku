@@ -15,7 +15,7 @@ public interface PlayerController {
 	 * 
 	 * @param message An error message.
 	 */
-	public void report(String message);
+	public void report(Gomoku game, String message);
 	
 	/**
 	 * Informs the player that a piece has been placed.
@@ -24,7 +24,7 @@ public interface PlayerController {
 	 * @param y The y coordinate on the game board.
 	 * @param value The value of the piece.
 	 */
-	public void informMove(int x, int y, byte value);
+	public void informMove(Gomoku game, int x, int y, byte value);
 	
 	/**
 	 * Returns a move to be played on the given Gomoku game board.

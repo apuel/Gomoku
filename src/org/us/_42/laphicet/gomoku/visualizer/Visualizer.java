@@ -6,6 +6,8 @@ import org.us._42.laphicet.gomoku.Gomoku;
 import org.us._42.laphicet.gomoku.GameStateReporter;
 import org.us._42.laphicet.gomoku.PlayerController;
 
+import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
+
 import org.lwjgl.BufferUtils;
 
 import static org.lwjgl.glfw.Callbacks.*;
@@ -56,6 +58,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private int currentPlayerPickingChar = 0;
 	private boolean[] availableChar = new boolean[8];
 	private static final String[] PIECENAME = new String[] {"Victini", "Claydol", "Slowpoke", "Cyndaquil", "Flareon", "Porygon2", "Paras", "Charmander"};
+	
+	private boolean toggleDebug;
+	private boolean debugPressed;
 	
 	private DoubleBuffer mouseX = BufferUtils.createDoubleBuffer(1);
 	private DoubleBuffer mouseY = BufferUtils.createDoubleBuffer(1);
@@ -165,10 +170,27 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		}
 	}
 	
-	private void renderStats() {
-		textutil.drawString("TURN", 440, 1220, 3, new Float[]{0.0f, 0.0f, 0.0f});
+	private void renderStats(Gomoku game) {
+		textutil.drawString("TURN", (int)(515 -  (2f * (textutil.width * 3/textutil.SCALE))), 1170, 3, new Float[]{0.0f, 0.0f, 0.0f});
 		textutil.drawString(playerNames[0], 70, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
-		textutil.drawString(playerNames[1], (int)(960 - (playerNames[1].length() * (textutil.width * 2 / textutil.SCALE))), 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
+		textutil.drawStringBackwards(playerNames[1], 950, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
+		if (game != null) {
+			String gameTurn = Integer.toString(game.getTurn());
+			textutil.drawString(gameTurn, (int)(515 -  ((gameTurn.length() / 2f) * (textutil.width * 3/textutil.SCALE))), 1130, 3, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawString("Piece Played: " + game.getPiecesPlaced(1), 70, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawStringBackwards("Piece Played: " + game.getPiecesPlaced(2), 950, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawString("Captures Made: " + game.getCaptureCount(1), 70, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawStringBackwards("Captures Made: " + game.getCaptureCount(1), 950, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			Renderer.renderTexture(this.playerPiece[game.getTurn() % 2], 500, 1220, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
+		}
+		else {
+			textutil.drawString("0", 500, 1130, 3, new Float[]{0.0f, 0.0f, 0.0f});
+			textutil.drawString("Piece Played: 0", 70, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawStringBackwards("Piece Played: 0", 950, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawString("Captures Made: 0", 70, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawStringBackwards("Captures Made: 0", 950, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			Renderer.renderTexture(this.playerPiece[0], 500, 1220, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
+		}
 	}
 
     
@@ -253,7 +275,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		this.loadCharacters();
 		this.charSelect();
 		
-		updateBoard();
+		updateBoard(null);
 	}
 	
 	/**
@@ -272,14 +294,14 @@ public class Visualizer implements PlayerController, GameStateReporter {
         glfwSwapBuffers(this.console);
 	}
 	
-	private void updateBoard() {
+	private void updateBoard(Gomoku game) {
 		glfwMakeContextCurrent(window);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		Renderer.renderTexture(this.backgroundTexture, BG_OFFSET_X + BOARD_SPACE, BG_OFFSET_Y + BOARD_SPACE, BG_OFFSET_X, BG_OFFSET_Y);
 		this.renderBoard();
 		this.renderPieces();
 		this.renderReports();
-		this.renderStats();
+		this.renderStats(game);
 		glfwSwapBuffers(this.window);
 	}
 	
@@ -288,29 +310,27 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	 * 
 	 * @param coords The output buffer for game-board coordinates.
 	 */
-	private boolean toggleDebug;
-	private boolean debugPressed;
     private void scan(int[] coords){
     	if (KeyCallBack.isKeyDown(GLFW_KEY_ESCAPE)) {
     		glfwSetWindowShouldClose(this.window, true);
     	}
     	
-    	if (!debugPressed && KeyCallBack.isKeyDown(GLFW_KEY_TAB)) {
-    		if (!toggleDebug) {
+    	if (!this.debugPressed && KeyCallBack.isKeyDown(GLFW_KEY_TAB)) {
+    		if (!this.toggleDebug) {
     			Renderer.displayWindow(this.console);
     			this.updateConsole();
     			glfwMakeContextCurrent(this.window);
     			glfwFocusWindow(this.window);
-    			toggleDebug = true;
+    			this.toggleDebug = true;
     		}
     		else {
     			glfwHideWindow(this.console);
-    			toggleDebug = false;
+    			this.toggleDebug = false;
     		}
-    		debugPressed = true;
+    		this.debugPressed = true;
     	}
     	else if (debugPressed && !KeyCallBack.isKeyDown(GLFW_KEY_TAB)){
-    		debugPressed = false;
+    		this.debugPressed = false;
     	}
     	
     	
@@ -348,8 +368,10 @@ public class Visualizer implements PlayerController, GameStateReporter {
 			this.report.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 1.0f, 1.0f}, log));
 			this.debug.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 1.0f, 1.0f}, log));
 		}
-		this.updateBoard();
-		this.updateConsole();
+		if (toggleDebug) {
+			this.updateConsole();
+		}
+		this.updateBoard(game);
 	}
 	
 	@Override
@@ -363,16 +385,18 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	@Override
-	public void report(String message) {
+	public void report(Gomoku game, String message) {
 		// TODO Auto-generated method stub
 		this.report.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 0.0f, 0.0f}, message));
 		this.debug.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 0.0f, 0.0f}, message));
-		this.updateBoard();
-		this.updateConsole();
+		if (toggleDebug) {
+			this.updateConsole();
+		}
+		this.updateBoard(game);
 	}
 	
 	@Override
-	public void informMove(int x, int y, byte value) {
+	public void informMove(Gomoku game, int x, int y, byte value) {
 		if (value != 0) {
 			this.pieces.add(new Piece(x + 1, y + 1, value - 1));
 		}
