@@ -25,7 +25,7 @@ public class TextUtil {
 	 * 
 	 */
 	public TextUtil(String path, int elementInRow, int elementInColumn) throws IOException {
-			fontImage = Tools.getBufferedImage(path);
+			fontImage = Renderer.getBufferedImage(path);
 			trueWidth = fontImage.getWidth();
 			width = (trueWidth - (elementInRow + 1)) / elementInRow;
 			height = (fontImage.getHeight() - (elementInColumn + 1)) / elementInColumn;
@@ -39,7 +39,7 @@ public class TextUtil {
 		int y = 1;
 		
 		for (int i = 33; i < 127; i++) {
-			this.alphabet[i - 33] = Tools.initTexture(fontImage, x, y, width, height, true);
+			this.alphabet[i - 33] = Renderer.initTexture(fontImage, x, y, width, height, true);
 			x += width + 1;
 			if (x + width > trueWidth) {
 				x = 1;
@@ -63,7 +63,7 @@ public class TextUtil {
 		for (int i = 0; i < line.length(); i++) {
 			char c = line.charAt(i);
 			if (c >= 33 && c <= 126) {
-				Tools.renderTexture(alphabet[line.charAt(i) - 33], x, y, newWidth, newHeight);
+				Renderer.renderTexture(alphabet[line.charAt(i) - 33], x, y, newWidth, newHeight);
 			}
 			x += newWidth;
 		}

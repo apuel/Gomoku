@@ -1,8 +1,14 @@
 package org.us._42.laphicet.gomoku.visualizer;
 
+import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
+import static org.lwjgl.glfw.GLFW.glfwShowWindow;
+import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
 import static org.lwjgl.opengl.GL11.GL_BLEND;
 import static org.lwjgl.opengl.GL11.GL_LINEAR;
+import static org.lwjgl.opengl.GL11.GL_LINES;
+import static org.lwjgl.opengl.GL11.GL_MODELVIEW;
 import static org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA;
+import static org.lwjgl.opengl.GL11.GL_PROJECTION;
 import static org.lwjgl.opengl.GL11.GL_QUADS;
 import static org.lwjgl.opengl.GL11.GL_RGBA;
 import static org.lwjgl.opengl.GL11.GL_RGBA8;
@@ -14,14 +20,19 @@ import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
 import static org.lwjgl.opengl.GL11.glBegin;
 import static org.lwjgl.opengl.GL11.glBindTexture;
 import static org.lwjgl.opengl.GL11.glBlendFunc;
+import static org.lwjgl.opengl.GL11.glColor3f;
 import static org.lwjgl.opengl.GL11.glDisable;
 import static org.lwjgl.opengl.GL11.glEnable;
 import static org.lwjgl.opengl.GL11.glEnd;
 import static org.lwjgl.opengl.GL11.glGenTextures;
+import static org.lwjgl.opengl.GL11.glLoadIdentity;
+import static org.lwjgl.opengl.GL11.glMatrixMode;
+import static org.lwjgl.opengl.GL11.glOrtho;
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glTexCoord2f;
 import static org.lwjgl.opengl.GL11.glTexImage2D;
 import static org.lwjgl.opengl.GL11.glTexParameteri;
+import static org.lwjgl.opengl.GL11.glVertex2f;
 import static org.lwjgl.opengl.GL11.glVertex2i;
 
 import java.awt.image.BufferedImage;
@@ -32,14 +43,15 @@ import java.nio.ByteBuffer;
 import javax.imageio.ImageIO;
 
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL;
 
 /**
- * Tools - Shared functions being used by other classes 
+ * Renderer - Shared functions being used by other classes 
  * that will render the visualizer
  * 
  * @author mlu & apuel
  */
-public final class Tools {
+public final class Renderer {
     /**
      * Initializes a texture from an image.
      * 
@@ -122,4 +134,34 @@ public final class Tools {
     	glDisable(GL_TEXTURE_2D);
     	glPopMatrix();
     }
+    
+    /**
+     * Draws a line from one pair of coordinates to another.
+     * 
+     * @param x1 The x coordinate for the first pair.
+     * @param y1 The y coordinate for the first pair.
+     * @param x2 The x coordinate for the second pair.
+     * @param y2 The y coordinate for the second pair.
+     */
+    public static void drawLine(float x1, float y1, float x2, float y2, float size) {
+    	glColor3f(0.0f, 0.0f, 0.0f);
+    	glBegin(GL_LINES);
+    	{
+    		for (float i = -size; i < size; i += 0.01f) {
+    			glVertex2f(x1 + i, y1 + i);
+    			glVertex2f(x2 + i, y2 + i);
+    		}
+    	}
+    	glEnd();
+    	glColor3f(1.0f, 1.0f, 1.0f);
+    }
+    
+	/**
+	 * Displays the visualizer window.
+	 */
+	public static void displayWindow(long window) {
+		glfwMakeContextCurrent(window);
+		glfwSwapInterval(1);
+		glfwShowWindow(window);
+	}
 }

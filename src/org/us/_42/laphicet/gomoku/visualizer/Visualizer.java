@@ -54,8 +54,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private int[] playerPiece = new int[2];
 	
 	private int currentPlayerPickingChar = 0;
-	private boolean[] availableChar = new boolean[]{false, false, false, false, false, false, false, false};
-	private static final String[] pieceName = new String[] {"Victini", "Claydol", "Slowpoke", "Cyndaquil", "Flareon", "Porygon2", "Paras", "Charmander"};
+	private boolean[] availableChar = new boolean[8];
+	private static final String[] PIECENAME = new String[] {"Victini", "Claydol", "Slowpoke", "Cyndaquil", "Flareon", "Porygon2", "Paras", "Charmander"};
 	
 	private DoubleBuffer mouseX = BufferUtils.createDoubleBuffer(1);
 	private DoubleBuffer mouseY = BufferUtils.createDoubleBuffer(1);
@@ -86,8 +86,6 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		this.keyCallback = new KeyCallBack();
 		glfwSetKeyCallback(window, this.keyCallback);
 		
-//		textutil.init("./img/font.png", 32, 3);
-		
 		try {
 			this.textutil = new TextUtil("./img/font.png", 32, 3);
 		} catch (IOException e) {
@@ -96,26 +94,193 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		}
 	}
 	
-	/**
-	 * Displays the visualizer window.
-	 */
-	private void displayWindow(long window) {
-		glfwMakeContextCurrent(window);
-		glfwSwapInterval(1);
-		glfwShowWindow(window);
+    private void setupGL(long screen, int x, int y) {
+    	glfwMakeContextCurrent(screen);
+    	GL.createCapabilities();
+		glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, x, 0, y, -1, 1);
+        glMatrixMode(GL_MODELVIEW); 
+        textutil.initAlphabet();
+    }
+   
+    //=============================================================================================================
+    //
+    // Visualizer Render Methods
+    //
+    //=============================================================================================================
+    /**
+     * Renders a blank board on the visualizer window.
+     */
+    private void renderBoard() {
+    	Renderer.drawLine(BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET, BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET, 1.4f);
+    	Renderer.drawLine(BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET , BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET, 1.4f);
+    	Renderer.drawLine(BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET, 1.4f);
+    	Renderer.drawLine(BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET, 1.4f);
+		
+    	for (float i = 1; i <= BOARD_SIZE; i++) {
+    		Renderer.drawLine(BOARD_SPACE, (i * BOARD_SPACE) + PIECE_OFFSET, BOARD_SIZE * BOARD_SPACE, (i * BOARD_SPACE) + PIECE_OFFSET, 1.4f);
+    		Renderer.drawLine(i * BOARD_SPACE, BOARD_SPACE + PIECE_OFFSET, i * BOARD_SPACE, (BOARD_SIZE * BOARD_SPACE) + PIECE_OFFSET, 1.4f);
+    	}
+    	
+    	Renderer.drawLine(BOARD_SPACE, MIDDLE_OFFSET, BOARD_WIDTH - BOARD_SPACE, MIDDLE_OFFSET, 1.4f);
+    	Renderer.drawLine(BOARD_SPACE, REPORTBOX_OFFSET , BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET, 1.4f);
+    	Renderer.drawLine(BOARD_SPACE, REPORTBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, REPORTBOX_OFFSET, 1.4f);
+    	Renderer.drawLine(BOARD_WIDTH - BOARD_SPACE, REPORTBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, MIDDLE_OFFSET, 1.4f);
+    }
+    
+    /**
+     * Renders the currently placed pieces onto the visualizer.
+     */
+    private void renderPieces() {
+    	for (Piece piece : this.pieces) {
+    		Renderer.renderTexture(this.playerPiece[piece.player], piece.x * BOARD_SPACE, BOARD_WIDTH - (piece.y * BOARD_SPACE) + PIECE_OFFSET, TEXTURE_OFFSET, TEXTURE_OFFSET);
+    	}
+    }
+    
+	private void renderReports() {
+		int x = 60;
+		int y = 60;
+		Entry<Float[],String> msg = null;
+		for (int i = 0; i < 10; i++) {
+			if (report.size() > i) {
+				msg = this.report.get(report.size() - 1 - i);
+				this.textutil.drawString(msg.getValue(), x, y, 1, msg.getKey());
+				y = y + 14;
+			}
+		}
+	}
+	
+	private void renderDebug() {
+		int x = 50;
+		int y = 950;
+		Entry<Float[],String> msg = null;
+		for (int i = 0; i < 65; i++) {
+			if (debug.size() > i) {
+				msg = this.debug.get(debug.size() - 1 - i);
+				this.textutil.drawString(">", x, y, 1, new Float[]{ 0.0f, 1.0f, 0.0f});
+				this.textutil.drawString(msg.getValue(), x + 20, y, 1, msg.getKey());
+				y = y - 14;
+			}
+		}
+	}
+	
+	private void renderStats() {
+		textutil.drawString("TURN", 440, 1220, 3, new Float[]{0.0f, 0.0f, 0.0f});
+		textutil.drawString(playerNames[0], 70, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
+		textutil.drawString(playerNames[1], (int)(960 - (playerNames[1].length() * (textutil.width * 2 / textutil.SCALE))), 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
+	}
+
+    
+    //=============================================================================================================
+    //
+    // Visualizer Character Selection Methods
+    //
+    //=============================================================================================================
+    /**
+     * Draws the initial visualizer state and initializes token textures.
+     */
+	private void loadCharacters() {
+		for (int i = 0; i < 8; i++) {
+			this.textures[i] = Renderer.initTexture(this.images[i], 0, 0, this.images[i].getWidth(), this.images[i].getHeight(), false);
+		}
+		this.backgroundTexture = Renderer.initTexture(this.bgBuffer, 0, 0, this.bgBuffer.getWidth(), this.bgBuffer.getHeight(), false);
+	}
+	
+	private void charSelect() {
+		while (currentPlayerPickingChar < 2) {
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			if (currentPlayerPickingChar == 0) {
+				this.textutil.drawString("Select Player 1", BOARD_WIDTH / 2 - 180, BOARD_WIDTH - 150, 3, new Float[]{ 0.0f, 1.0f, 0.0f});
+				for (int i = 0, x = 220, y = 650; i < 8; i++, x+= 80) {
+					Renderer.renderTexture(this.textures[i], x, y, TEXTURE_OFFSET, TEXTURE_OFFSET);
+				}
+			}
+			else {
+				this.textutil.drawString("Select Player 2", BOARD_WIDTH / 2 - 180, BOARD_WIDTH - 150, 3, new Float[]{ 0.0f, 1.0f, 0.0f});
+				for (int i = 0, x = 220, y = 650; i < 8; i++, x+= 80) {
+					Renderer.renderTexture(this.textures[i], x, y, TEXTURE_OFFSET, TEXTURE_OFFSET);
+				}
+			}
+        	glfwSwapBuffers(this.window);
+        	glfwPollEvents();
+			scan(new int[]{});
+		}
 	}
 	
 	private void pickChar(double x, double y) {
 		for (int i = 0, x1 = 200, x2 = 240; i < 8; i++, x1+= 80, x2 += 80) {
 			if (x >= x1 && x <= x2 && y >= 630 && y < 670 && !availableChar[i]) {
 				this.playerPiece[currentPlayerPickingChar] = this.textures[i];
-				this.playerNames[currentPlayerPickingChar] = this.pieceName[i];
+				this.playerNames[currentPlayerPickingChar] = PIECENAME[i];
 				availableChar[i] = true;
 				currentPlayerPickingChar++;
-				System.out.println("Selected " + this.pieceName[i]); 
 			}
 		}
 	}
+	
+	
+    //=============================================================================================================
+    //
+    // Visualizer Runtime Methods
+    //
+    //=============================================================================================================
+	/**
+	 * Initialize and display the visualizer window and its initial states.
+	 */
+	public void start() {
+		this.init();
+		try {
+			this.images[0] = Renderer.getBufferedImage("./img/victini.png");
+			this.images[1] = Renderer.getBufferedImage("./img/claydol.png");
+			this.images[2] = Renderer.getBufferedImage("./img/slowpoke.png");
+			this.images[3] = Renderer.getBufferedImage("./img/cyndaquil.png");
+			this.images[4] = Renderer.getBufferedImage("./img/flareon.png");
+			this.images[5] = Renderer.getBufferedImage("./img/porygon2.png");
+			this.images[6] = Renderer.getBufferedImage("./img/paras.png");
+			this.images[7] = Renderer.getBufferedImage("./img/charmander.png");
+			this.bgBuffer = Renderer.getBufferedImage("./img/field.png");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		Renderer.displayWindow(this.window);
+		Renderer.displayWindow(this.console);
+		this.setupGL(console, BOARD_WIDTH, BOARD_WIDTH);
+		this.setupGL(window, BOARD_WIDTH, BOARD_WIDTH + BOARD_OFFSET);
+		
+		this.loadCharacters();
+		this.charSelect();
+		
+		updateBoard();
+	}
+	
+	/**
+	 * Destroy the visualizer window and free respective objects.
+	 */
+	public void end() {
+		glfwFreeCallbacks(this.window);
+		glfwDestroyWindow(this.window);
+		glfwTerminate();
+	}
+	
+	private void updateConsole() {
+		glfwMakeContextCurrent(console);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		this.renderDebug();
+        glfwSwapBuffers(this.console);
+	}
+	
+	private void updateBoard() {
+		glfwMakeContextCurrent(window);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		Renderer.renderTexture(this.backgroundTexture, BG_OFFSET_X + BOARD_SPACE, BG_OFFSET_Y + BOARD_SPACE, BG_OFFSET_X, BG_OFFSET_Y);
+		this.renderBoard();
+		this.renderPieces();
+		this.renderReports();
+		this.renderStats();
+		glfwSwapBuffers(this.window);
+	}
+	
 	/**
 	 * Scans for key changes on the GL window.
 	 * 
@@ -147,188 +312,12 @@ public class Visualizer implements PlayerController, GameStateReporter {
     		}
     	}
     }
-    
-    /**
-     * Draws a line from one pair of coordinates to another.
-     * 
-     * @param x1 The x coordinate for the first pair.
-     * @param y1 The y coordinate for the first pair.
-     * @param x2 The x coordinate for the second pair.
-     * @param y2 The y coordinate for the second pair.
-     */
-    private void drawLine(float x1, float y1, float x2, float y2) {
-    	glColor3f(0.0f, 0.0f, 0.0f);
-    	glBegin(GL_LINES);
-    	{
-    		for (float i = -1.337f; i < 1.337f; i += 0.01f) {
-    			glVertex2f(x1 + i, y1 + i);
-    			glVertex2f(x2 + i, y2 + i);
-    		}
-    	}
-    	glEnd();
-    	glColor3f(1.0f, 1.0f, 1.0f);
-    }
-    
-    /**
-     * Renders a blank board on the visualizer window.
-     */
-    private void renderBoard() {
-    	drawLine(BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET, BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET);
-		drawLine(BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET , BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET);
-    	drawLine(BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET );
-		drawLine(BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET);
-		
-    	for (float i = 1; i <= BOARD_SIZE; i++) {
-    		drawLine(BOARD_SPACE, (i * BOARD_SPACE) + PIECE_OFFSET, BOARD_SIZE * BOARD_SPACE, (i * BOARD_SPACE) + PIECE_OFFSET);
-    		drawLine(i * BOARD_SPACE, BOARD_SPACE + PIECE_OFFSET, i * BOARD_SPACE, (BOARD_SIZE * BOARD_SPACE) + PIECE_OFFSET);
-    	}
-    	
-    	drawLine(BOARD_SPACE, MIDDLE_OFFSET, BOARD_WIDTH - BOARD_SPACE, MIDDLE_OFFSET);
-		drawLine(BOARD_SPACE, REPORTBOX_OFFSET , BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET);
-    	drawLine(BOARD_SPACE, REPORTBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, REPORTBOX_OFFSET );
-		drawLine(BOARD_WIDTH - BOARD_SPACE, REPORTBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, MIDDLE_OFFSET);
-    }
-    
-    /**
-     * Renders the currently placed pieces onto the visualizer.
-     */
-    private void renderPieces() {
-    	for (Piece piece : this.pieces) {
-    		Tools.renderTexture(this.playerPiece[piece.player], piece.x * BOARD_SPACE, BOARD_WIDTH - (piece.y * BOARD_SPACE) + PIECE_OFFSET, TEXTURE_OFFSET, TEXTURE_OFFSET);
-    	}
-    }
-    
-    private void setupGL(long screen, int x, int y) {
-    	glfwMakeContextCurrent(screen);
-    	GL.createCapabilities();
-		glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(0, x, 0, y, -1, 1);
-        glMatrixMode(GL_MODELVIEW); 
-        textutil.initAlphabet();
-    }
-    
-    /**
-     * Draws the initial visualizer state and initializes token textures.
-     */
-	private void loadCharacters() {
-		for (int i = 0; i < 8; i++) {
-			this.textures[i] = Tools.initTexture(this.images[i], 0, 0, this.images[i].getWidth(), this.images[i].getHeight(), false);
-		}
-		this.backgroundTexture = Tools.initTexture(this.bgBuffer, 0, 0, this.bgBuffer.getWidth(), this.bgBuffer.getHeight(), false);
-	}
 	
-	private void charSelect() {
-		while (currentPlayerPickingChar < 2) {
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			if (currentPlayerPickingChar == 0) {
-				this.textutil.drawString("Select Player 1", BOARD_WIDTH / 2 - 180, BOARD_WIDTH - 150, 3, new Float[]{ 0.0f, 1.0f, 0.0f});
-				for (int i = 0, x = 220, y = 650; i < 8; i++, x+= 80) {
-					Tools.renderTexture(this.textures[i], x, y, TEXTURE_OFFSET, TEXTURE_OFFSET);
-				}
-			}
-			else {
-				this.textutil.drawString("Select Player 2", BOARD_WIDTH / 2 - 180, BOARD_WIDTH - 150, 3, new Float[]{ 0.0f, 1.0f, 0.0f});
-				for (int i = 0, x = 220, y = 650; i < 8; i++, x+= 80) {
-					Tools.renderTexture(this.textures[i], x, y, TEXTURE_OFFSET, TEXTURE_OFFSET);
-				}
-			}
-        	glfwSwapBuffers(this.window);
-        	glfwPollEvents();
-			scan(new int[]{});
-		}
-	}
-	/**
-	 * Initialize and display the visualizer window and its initial states.
-	 */
-	public void start() {
-		this.init();
-		try {
-			this.images[0] = Tools.getBufferedImage("./img/victini.png");
-			this.images[1] = Tools.getBufferedImage("./img/claydol.png");
-			this.images[2] = Tools.getBufferedImage("./img/slowpoke.png");
-			this.images[3] = Tools.getBufferedImage("./img/cyndaquil.png");
-			this.images[4] = Tools.getBufferedImage("./img/flareon.png");
-			this.images[5] = Tools.getBufferedImage("./img/porygon2.png");
-			this.images[6] = Tools.getBufferedImage("./img/paras.png");
-			this.images[7] = Tools.getBufferedImage("./img/charmander.png");
-			this.bgBuffer = Tools.getBufferedImage("./img/field.png");
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		System.out.println("Test");
-		this.displayWindow(this.window);
-		this.displayWindow(this.console);
-		this.setupGL(console, BOARD_WIDTH, BOARD_WIDTH);
-		this.setupGL(window, BOARD_WIDTH, BOARD_WIDTH + BOARD_OFFSET);
-		
-		this.loadCharacters();
-		this.charSelect();
-		
-//		beginVisualize();
-		updateBoard();
-	}
-	
-	/**
-	 * Destroy the visualizer window and free respective objects.
-	 */
-	public void end() {
-		glfwFreeCallbacks(this.window);
-		glfwDestroyWindow(this.window);
-		glfwTerminate();
-	}
-	
-	private void renderReports() {
-		int x = 60;
-		int y = 60;
-		Entry<Float[],String> msg = null;
-		for (int i = 0; i < 10; i++) {
-			if (report.size() > i) {
-				msg = this.report.get(report.size() - 1 - i);
-				this.textutil.drawString(msg.getValue(), x, y, 1, msg.getKey());
-				y = y + 14;
-			}
-		}
-	}
-	
-	private void renderDebug() {
-		int x = 50;
-		int y = 950;
-		Entry<Float[],String> msg = null;
-		for (int i = 0; i < 65; i++) {
-			if (debug.size() > i) {
-				msg = this.debug.get(debug.size() - 1 - i);
-				this.textutil.drawString(">", x, y, 1, new Float[]{ 0.0f, 1.0f, 0.0f});
-				this.textutil.drawString(msg.getValue(), x + 20, y, 1, msg.getKey());
-				y = y - 14;
-			}
-		}
-	}
-	
-	private void updateConsole() {
-		glfwMakeContextCurrent(console);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		this.renderDebug();
-        glfwSwapBuffers(this.console);
-	}
-	
-	private void updateBoard() {
-		glfwMakeContextCurrent(window);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		Tools.renderTexture(this.backgroundTexture, BG_OFFSET_X + BOARD_SPACE, BG_OFFSET_Y + BOARD_SPACE, BG_OFFSET_X, BG_OFFSET_Y);
-		this.renderBoard();
-		this.renderPieces();
-		this.renderReports();
-		this.renderStats();
-		glfwSwapBuffers(this.window);
-	}
-	
-	private void renderStats() {
-		textutil.drawString("TURN", 440, 1220, 3, new Float[]{0.0f, 0.0f, 0.0f});
-		textutil.drawString(playerNames[0], 70, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
-		textutil.drawString(playerNames[1], (int)(960 - (playerNames[1].length() * (textutil.width * 2 / textutil.SCALE))), 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
-	}
-	
+    //=============================================================================================================
+    //
+    // Visualizer Method Overloads
+    //
+    //=============================================================================================================
 	@Override
 	public void logTurn(Gomoku game, int x, int y, byte value, Collection<String> logs) {
 		for (String log : logs) {
