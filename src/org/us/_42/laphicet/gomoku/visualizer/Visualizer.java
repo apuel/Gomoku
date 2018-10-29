@@ -43,14 +43,15 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private static final int TEXTURE_OFFSET = (128 / 5);
 	private static final int BG_OFFSET_X = (BOARD_WIDTH - (BOARD_SPACE * 2)) / 2;
 	private static final int BG_OFFSET_Y = ((BOARD_WIDTH + BOARD_OFFSET) - (BOARD_SPACE * 2)) / 2;
+	private static final int CHAR_COUNT = 8;
 	
 	private Set<Piece> pieces = new HashSet<Piece>();
 	private List<Entry<Float[],String>> report = new ArrayList<Entry<Float[],String>>();
 	private List<Entry<Float[],String>> debug = new ArrayList<Entry<Float[],String>>();
-	private int[] textures = new int[8];
+	private int[] textures = new int[CHAR_COUNT];
 	private int backgroundTexture;
 	private BufferedImage bgBuffer = null;
-	private BufferedImage[] images = new BufferedImage[8];
+	private BufferedImage[] images = new BufferedImage[CHAR_COUNT];
 	private int[] playerPiece = new int[2];
 	
 	private int currentPlayerPickingChar = 0;
