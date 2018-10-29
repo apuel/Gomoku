@@ -66,7 +66,7 @@ public class Main {
 	}
 	
 	public static void main(String... args) {
-		if (Arrays.asList(args).contains("-ignoreThreadCheck")) {
+		if (!(Arrays.asList(args).contains("-ignoreThreadCheck"))) {
 			XstartOnFirstThread();
 		}
 		
