@@ -369,33 +369,35 @@ public class Gomoku {
 	 * @param value The value of the placed token.
 	 * @param dx The x direction to attempt a capture in.
 	 * @param dy The y direction to attempt a capture in.
-	 * @return Whether or not placing the token would capture any tokens in this direction.
+	 * @return 1 for capture, 0 for no capture.
 	 */
-	private boolean checkCapture(int x, int y, int value, int dx, int dy) {
+	private int checkCapture(int x, int y, int value, int dx, int dy) {
 		if (this.getToken(x + (dx * 3), y + (dy * 3)) == value) {
 			int v1 = this.getToken(x + (dx * 1), y + (dy * 1));
 			int v2 = this.getToken(x + (dx * 2), y + (dy * 2));
-			return (v1 > 0 && v1 != value && v2 > 0 && v2 != value);
+			if (v1 > 0 && v1 != value && v2 > 0 && v2 != value) {
+				return (1);
+			}
 		}
-		return (false);
+		return (0);
 	}
 	
 	/**
-	 * Checks if placing a token would capture any tokens.
+	 * Counts the number of captures that would occur if the token would be placed.
 	 * 
 	 * @param x The x coordinate of the token.
 	 * @param y The y coordinate of the token.
 	 * @param value The value of the token.
-	 * @return Whether or not placing the token would capture any tokens.
+	 * @return The number of captures that would occur if the token would be placed.
 	 */
-	public boolean doesCapture(int x, int y, int value) {
-		return (this.checkCapture(x, y, value, -1, +0) ||
-				this.checkCapture(x, y, value, +1, +0) ||
-				this.checkCapture(x, y, value, +0, -1) ||
-				this.checkCapture(x, y, value, +0, +1) ||
-				this.checkCapture(x, y, value, -1, +1) ||
-				this.checkCapture(x, y, value, +1, +1) ||
-				this.checkCapture(x, y, value, +1, -1) ||
+	public int countCaptures(int x, int y, int value) {
+		return (this.checkCapture(x, y, value, -1, +0) +
+				this.checkCapture(x, y, value, +1, +0) +
+				this.checkCapture(x, y, value, +0, -1) +
+				this.checkCapture(x, y, value, +0, +1) +
+				this.checkCapture(x, y, value, -1, +1) +
+				this.checkCapture(x, y, value, +1, +1) +
+				this.checkCapture(x, y, value, +1, -1) +
 				this.checkCapture(x, y, value, -1, -1));
 	}
 	
@@ -603,7 +605,7 @@ public class Gomoku {
 			return (false);
 		}
 		
-		if (this.createsDoubleThree(x, y, value) && !(this.doesCapture(x, y, value))) {
+		if (this.createsDoubleThree(x, y, value) && (this.countCaptures(x, y, value) == 0)) {
 			player.report(this, "You may not play a token that would cause a double three!");
 			return (false);
 		}
