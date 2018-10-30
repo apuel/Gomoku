@@ -373,6 +373,53 @@ public class Gomoku {
 	}
 	
 	/**
+	 * Checks if a token is in danger of capture within the direction of dx and dy.
+	 * 
+	 * @param x The x coordinate of the token.
+	 * @param y The y coordinate of the token.
+	 * @param value The value of the token.
+	 * @param dx The x direction to attempt a capture in.
+	 * @param dy The y direction to attempt a capture in.
+	 * @return Whether or not the token is in danger of capture in this direction.
+	 */
+	private boolean checkDanger(int x, int y, int value, int dx, int dy) {
+		int prev = this.getToken(x - dx, y - dy);
+		int next = this.getToken(x + dx, y + dy);
+		
+		if (prev == value && next != value && next > 0) {
+			return (this.getToken(x - (dx * 2), y - (dy * 2)) == 0);
+		}
+		if (next == value && prev != value && prev > 0) {
+			return (this.getToken(x + (dx * 2), y + (dy * 2)) == 0);
+		}
+		if (prev == value && next == 0) {
+			int token = this.getToken(x - (dx * 2), y - (dy * 2));
+			return (token > 0 && token != value);
+		}
+		if (next == value && prev == 0) {
+			int token = this.getToken(x + (dx * 2), y + (dy * 2));
+			return (token > 0 && token != value);
+		}
+		
+		return (false);
+	}
+	
+	/**
+	 * Checks if a token is in danger of being captured.
+	 * 
+	 * @param x The x coordinate of the token.
+	 * @param y The y coordinate of the token.
+	 * @param value The value of the token.
+	 * @return Whether or not the token is in danger of being captured.
+	 */
+	private boolean isInDanger(int x, int y, int value) {
+		return (this.checkDanger(x, y, value, +1, +0) ||
+				this.checkDanger(x, y, value, +0, +1) ||
+				this.checkDanger(x, y, value, +1, +1) ||
+				this.checkDanger(x, y, value, +1, -1));
+	}
+	
+	/**
 	 * Checks for a free three within the direction of dx and dy.
 	 * 
 	 * @param x The x coordinate of the token.
@@ -390,7 +437,8 @@ public class Gomoku {
 		int pcount = 0;
 		for (int i = 1; ; i++) {
 			int token = this.getToken(x - (dx * i), y - (dy * i));
-			if (token < 0 || (token != 0 && token != value)) {
+			if (token < 0 || (token != 0 && token != value) ||
+				(token != 0 && this.isInDanger(x - (dx * i), y - (dy * i), value))) {
 				if (!pspaced) {
 					return (false);
 				}
@@ -415,7 +463,8 @@ public class Gomoku {
 		int ncount = 0;
 		for (int i = 1; ; i++) {
 			int token = this.getToken(x + (dx * i), y + (dy * i));
-			if (token < 0 || (token != 0 && token != value)) {
+			if (token < 0 || (token != 0 && token != value) ||
+				(token != 0 && this.isInDanger(x + (dx * i), y + (dy * i), value))) {
 				if (!nspaced) {
 					return (false);
 				}
