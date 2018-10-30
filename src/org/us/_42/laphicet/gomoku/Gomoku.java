@@ -325,11 +325,6 @@ public class Gomoku {
 			if (v1 > 0 && v1 != value && v2 > 0 && v2 != value) {
 				this.logs.add(String.format(CAPTURE_FORMAT, player.name(this, value), this.players[v1 - 1].name(this, v1), x1, y1));
 				this.logs.add(String.format(CAPTURE_FORMAT, player.name(this, value), this.players[v2 - 1].name(this, v2), x2, y2));
-				this.placed[v1 - 1]--;
-				this.placed[v2 - 1]--;
-				this.clearToken(x1, y1);
-				this.clearToken(x2, y2);
-				this.captures[this.turn % PLAYER_COUNT]++;
 				
 				if (this.reporter != null) {
 					this.reporter.reportChange(this, x1, y1, 0);
@@ -339,6 +334,12 @@ public class Gomoku {
 					p.informChange(this, x1, y1, 0);
 					p.informChange(this, x2, y2, 0);
 				}
+				
+				this.placed[v1 - 1]--;
+				this.placed[v2 - 1]--;
+				this.clearToken(x1, y1);
+				this.clearToken(x2, y2);
+				this.captures[this.turn % PLAYER_COUNT]++;
 			}
 		}
 	}
