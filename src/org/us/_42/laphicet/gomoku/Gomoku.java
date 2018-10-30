@@ -118,7 +118,7 @@ public class Gomoku {
 	}
 	
 	/**
-	 * Returns the value for the piece at the location.
+	 * Returns the value for the token at the location.
 	 * 
 	 * @param x The x coordinate for the token.
 	 * @param y The y coordinate for the token.
@@ -297,6 +297,43 @@ public class Gomoku {
 	}
 	
 	/**
+	 * Checks if placing a token would capture within the direction of dx and dy.
+	 * 
+	 * @param x The x coordinate of the placed token.
+	 * @param y The y coordinate of the placed token.
+	 * @param value The value of the placed token.
+	 * @param dx The x direction to attempt a capture in.
+	 * @param dy The y direction to attempt a capture in.
+	 */
+	private boolean checkCapture(int x, int y, int value, int dx, int dy) {
+		if (this.getToken(x + (dx * 3), y + (dy * 3)) == value) {
+			int v1 = this.getToken(x + (dx * 1), y + (dy * 1));
+			int v2 = this.getToken(x + (dx * 2), y + (dy * 2));
+			return (v1 > 0 && v1 != value && v2 > 0 && v2 != value);
+		}
+		return (false);
+	}
+	
+	/**
+	 * Checks if placing a token would capture any tokens.
+	 * 
+	 * @param x The x coordinate of the token.
+	 * @param y The y coordinate of the token.
+	 * @param value The value of the token.
+	 * @return Whether or not placing the token would capture any tokens.
+	 */
+	private boolean doesCapture(int x, int y, int value) {
+		return (this.checkCapture(x, y, value, -1, +0) ||
+				this.checkCapture(x, y, value, +1, +0) ||
+				this.checkCapture(x, y, value, +0, -1) ||
+				this.checkCapture(x, y, value, +0, +1) ||
+				this.checkCapture(x, y, value, -1, +1) ||
+				this.checkCapture(x, y, value, +1, +1) ||
+				this.checkCapture(x, y, value, +1, -1) ||
+				this.checkCapture(x, y, value, -1, -1));
+	}
+	
+	/**
 	 * Checks if a capture is possible within the direction of dx and dy.
 	 * 
 	 * @param x The x coordinate of the token.
@@ -336,6 +373,95 @@ public class Gomoku {
 	}
 	
 	/**
+	 * Checks for a free three within the direction of dx and dy.
+	 * 
+	 * @param x The x coordinate of the token.
+	 * @param y The y coordinate of the token.
+	 * @param value The value of the token.
+	 * @param dx The x direction to attempt a capture in.
+	 * @param dy The y direction to attempt a capture in.
+	 * @return Whether or not the token would create a free three in this direction.
+	 */
+	private boolean createsFreeThree(int x, int y, int value, int dx, int dy) {
+		int prev = 0;
+		int next = 0;
+		
+		boolean pspaced = false;
+		int pcount = 0;
+		for (int i = 1; ; i++) {
+			int token = this.getToken(x - (dx * i), y - (dy * i));
+			if (token < 0 || (token != 0 && token != value)) {
+				if (!pspaced) {
+					return (false);
+				}
+				break;
+			}
+			if (!pspaced && token == 0) {
+				pspaced = true;
+				prev = pcount;
+				continue;
+			}
+			if (token == 0) {
+				prev = pcount;
+				break;
+			}
+			pcount++;
+		}
+		if (prev == 0) {
+			pspaced = false;
+		}
+		
+		boolean nspaced = false;
+		int ncount = 0;
+		for (int i = 1; ; i++) {
+			int token = this.getToken(x + (dx * i), y + (dy * i));
+			if (token < 0 || (token != 0 && token != value)) {
+				if (!nspaced) {
+					return (false);
+				}
+				break;
+			}
+			if (!nspaced && !pspaced && token == 0) {
+				nspaced = true;
+				next = ncount;
+				continue;
+			}
+			if (token == 0) {
+				next = ncount;
+				break;
+			}
+			ncount++;
+		}
+		
+		return ((prev + 1 + next) >= 3);
+	}
+	
+	/**
+	 * Checks for double threes created by placing a token.
+	 * 
+	 * @param x The x coordinate of the token.
+	 * @param y The y coordinate of the token.
+	 * @param value The value of the token.
+	 * @return Whether or not the token would create a double three.
+	 */
+	private boolean createsDoubleThree(int x, int y, int value) {
+		int threes = 0;
+		if (this.createsFreeThree(x, y, value, +1, +0)) {
+			threes++;
+		}
+		if (this.createsFreeThree(x, y, value, +0, +1)) {
+			threes++;
+		}
+		if (this.createsFreeThree(x, y, value, +1, +1)) {
+			threes++;
+		}
+		if (this.createsFreeThree(x, y, value, +1, -1)) {
+			threes++;
+		}
+		return (threes >= 2);
+	}
+	
+	/**
 	 * Validates if placing a token at the given coordinates is allowed.
 	 * 
 	 * @param x The x coordinate for the token.
@@ -358,15 +484,53 @@ public class Gomoku {
 		}
 		
 		if (this.isCapturable(x, y, value)) {
-			player.report(this, "You may not place a piece into a capture!");
+			player.report(this, "You may not place a token into a capture!");
 			return (false);
 		}
 		
-		//Check whether or not this move creates a double three
-		//If so, check for possible captures made by this move
-		//If none, this move is not allowed to create a double three
+		if (this.createsDoubleThree(x, y, value) && !(this.doesCapture(x, y, value))) {
+			player.report(this, "You may not play a token that would cause a double three!");
+			return (false);
+		}
 		
 		return (true);
+	}
+	
+	/**
+	 * Checks if the placed piece binds a row of 5 or more tokens.
+	 * If it does, it saves the context of the token and waits a turn to check for interruptions.
+	 * If not interrupted, a player is awarded with a win.
+	 * 
+	 * @param x The x coordinate of the placed token.
+	 * @param y The y coordinate of the placed token.
+	 * @param value The value of the placed token.
+	 */
+	private void checkFor5(int x, int y, int value) {
+		if (this.check5 == null) {
+			for (int i = 0; i < 4; i++) {
+				if (this.board[y][x].adjacent[i] >= 5) {
+					this.check5 = this.board[y][x];
+					this.logs.add(this.players[value - 1].name(value) + " placed at least 5 tokens in a row!");
+					this.logs.add("This move must be countered before the next turn or they will win!");
+					break;
+				}
+			}
+		}
+		else {
+			for (int i = 0; i < 4; i++) {
+				if (this.check5.adjacent[i] >= 5) {
+					this.winner = this.check5.value;
+					this.logs.add(this.players[this.check5.value - 1].name(this.check5.value) + " has won!");
+					break;
+				}
+			}
+			
+			if (this.winner == 0) {
+				this.logs.add(this.players[this.check5.value - 1].name(this.check5.value) + " no longer has 5 tokens in a row!");
+				this.check5 = null;
+				this.checkFor5(x, y, value);
+			}
+		}
 	}
 	
 	/**
@@ -400,32 +564,8 @@ public class Gomoku {
 				this.winner = value;
 				this.logs.add(String.format("%s has captured %d times and won!", player.name(value), captures));
 			}
-			else if (this.check5 == null) {
-				for (int i = 0; i < 4; i++) {
-					if (this.board[y][x].adjacent[i] >= 5) {
-						this.check5 = this.board[y][x];
-						break;
-					}
-				}
-				
-				if (this.check5 != null) {
-					this.logs.add(player.name(value) + " placed at least 5 tokens in a row!");
-					this.logs.add("This move must be countered before the next turn or they will win!");
-				}
-			}
 			else {
-				for (int i = 0; i < 4; i++) {
-					if (this.check5.adjacent[i] >= 5) {
-						this.winner = this.check5.value;
-						this.logs.add(player.name(this.check5.value) + " has won!");
-						break;
-					}
-				}
-				
-				if (this.winner == 0) {
-					this.logs.add(this.players[this.check5.value - 1].name(this.check5.value) + " no longer has 5 tokens in a row!");
-					this.check5 = null;
-				}
+				this.checkFor5(x, y, value);
 			}
 			
 			if (this.winner == 0) {
