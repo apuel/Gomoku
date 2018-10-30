@@ -59,6 +59,7 @@ public class Gomoku {
 	private Token check5 = null;
 	private int winner = 0;
 	
+	private boolean started = false;
 	private boolean abort = false;
 	private boolean running = false;
 	
@@ -652,6 +653,13 @@ public class Gomoku {
 	 * Tries to fetch the next input from 
 	 */
 	private void nextTurn() {
+		if (!(this.started)) {
+			for (int i = 0; i < PLAYER_COUNT; i++) {
+				this.players[i].gameStart(this, i + 1);
+			}
+			this.started = true;
+		}
+		
 		if (this.winner == 0 && !(this.abort)) {
 			PlayerController player = this.players[this.turn % PLAYER_COUNT];
 			int value = (this.turn % PLAYER_COUNT) + 1;
@@ -668,6 +676,14 @@ public class Gomoku {
 			this.placed[this.turn % PLAYER_COUNT]++;
 			this.logs.add(String.format("%s placed a token at %d, %d.", player.name(this, value), this.x, this.y));
 			
+			for (PlayerController p : this.set) {
+				p.informChange(this, this.x, this.y, value);
+			}
+			
+			if (this.reporter != null) {
+				this.reporter.reportChange(this, this.x, this.y, value);
+			}
+			
 			this.applyCaptures(this.x, this.y, value);
 			int captures = this.captures[this.turn % PLAYER_COUNT];
 			if (this.check5 == null && captures >= CAPTURES_TO_WIN) {
@@ -682,15 +698,13 @@ public class Gomoku {
 				this.turn++;
 			}
 			
-			for (PlayerController p : this.set) {
-				p.informChange(this, this.x, this.y, value);
-				if (this.winner != 0) {
+			if (this.winner != 0) {
+				for (PlayerController p : this.set) {
 					p.informWinner(this, this.winner);
 				}
 			}
 			
 			if (this.reporter != null) {
-				this.reporter.reportChange(this, this.x, this.y, value);
 				this.reporter.logTurn(this, this.logs);
 			}
 			this.logs.clear();
@@ -747,7 +761,12 @@ public class Gomoku {
 			this.turn = 0;
 			this.check5 = null;
 			this.winner = 0;
+			this.started = false;
 			this.abort = false;
+			
+			for (PlayerController p : this.set) {
+				p.gameEnd(this);
+			}
 		}
 	}
 	
@@ -774,6 +793,7 @@ public class Gomoku {
 				}
 				this.players[i] = players[i];
 				this.set.add(players[i]);
+				players[i].gameStart(this, i + 1);
 			}
 		}
 	}

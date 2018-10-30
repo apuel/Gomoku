@@ -47,4 +47,19 @@ public interface PlayerController {
 	 * @return Whether the player made a move or not.
 	 */
 	public boolean getMove(Gomoku game, int value, long key);
+	
+	/**
+	 * Signals the start of a new game.
+	 * 
+	 * @param game The Gomoku game controller.
+	 * @param value A value representing the player's token.
+	 */
+	public void gameStart(Gomoku game, int value);
+	
+	/**
+	 * Signals the end of a game.
+	 * 
+	 * @param game The Gomoku game controller.
+	 */
+	public void gameEnd(Gomoku game);
 }

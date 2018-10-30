@@ -86,5 +86,12 @@ public class Arta implements PlayerController {
 		scanBoard();
 		return (true);
 	}
-
+	
+	@Override
+	public void gameStart(Gomoku game, int value) {
+	}
+	
+	@Override
+	public void gameEnd(Gomoku game) {
+	}
 }

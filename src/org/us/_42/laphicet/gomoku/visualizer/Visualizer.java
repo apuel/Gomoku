@@ -443,7 +443,6 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	
 	@Override
 	public void report(Gomoku game, String message) {
-		// TODO Auto-generated method stub
 		this.report.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 0.0f, 0.0f}, message));
 		this.debug.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 0.0f, 0.0f}, message));
 		if (toggleDebug) {
@@ -472,4 +471,10 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		game.submitMove(coords[0], coords[1], key);
 		return (true);
 	}
+	
+	@Override
+	public void gameStart(Gomoku game, int value) { }
+	
+	@Override
+	public void gameEnd(Gomoku game) { }
 }

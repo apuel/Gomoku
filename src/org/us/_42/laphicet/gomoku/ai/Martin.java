@@ -37,4 +37,10 @@ public class Martin implements PlayerController {
 		}
 		return (true);
 	}
+	
+	@Override
+	public void gameStart(Gomoku game, int value) { }
+	
+	@Override
+	public void gameEnd(Gomoku game) { }
 }
