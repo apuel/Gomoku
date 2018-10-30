@@ -362,13 +362,14 @@ public class Gomoku {
 	}
 	
 	/**
-	 * Checks if placing a token would capture within the direction of dx and dy.
+	 * Checks if placing a token would capture any tokens within the direction of dx and dy.
 	 * 
 	 * @param x The x coordinate of the placed token.
 	 * @param y The y coordinate of the placed token.
 	 * @param value The value of the placed token.
 	 * @param dx The x direction to attempt a capture in.
 	 * @param dy The y direction to attempt a capture in.
+	 * @return Whether or not placing the token would capture any tokens in this direction.
 	 */
 	private boolean checkCapture(int x, int y, int value, int dx, int dy) {
 		if (this.getToken(x + (dx * 3), y + (dy * 3)) == value) {
@@ -387,7 +388,7 @@ public class Gomoku {
 	 * @param value The value of the token.
 	 * @return Whether or not placing the token would capture any tokens.
 	 */
-	private boolean doesCapture(int x, int y, int value) {
+	public boolean doesCapture(int x, int y, int value) {
 		return (this.checkCapture(x, y, value, -1, +0) ||
 				this.checkCapture(x, y, value, +1, +0) ||
 				this.checkCapture(x, y, value, +0, -1) ||
@@ -399,16 +400,16 @@ public class Gomoku {
 	}
 	
 	/**
-	 * Checks if a capture is possible within the direction of dx and dy.
+	 * Checks if placing this token would put it in a state of capture within the direction of dx and dy.
 	 * 
 	 * @param x The x coordinate of the token.
 	 * @param y The y coordinate of the token.
 	 * @param value The value of the token.
 	 * @param dx The x direction to attempt a capture in.
 	 * @param dy The y direction to attempt a capture in.
-	 * @return Whether or not the token would be capturable in this direction.
+	 * @return Whether or not placing this token would put it in a state of capture in this direction.
 	 */
-	private boolean checkCapturable(int x, int y, int value, int dx, int dy) {
+	private boolean checkCaptured(int x, int y, int value, int dx, int dy) {
 		int prev = this.getToken(x - dx, y - dy);
 		int next = this.getToken(x + dx, y + dy);
 		
@@ -423,18 +424,18 @@ public class Gomoku {
 	}
 	
 	/**
-	 * Checks if a capture is possible on this token.
+	 * Checks if placing the token would put it in a state of capture.
 	 * 
 	 * @param x The x coordinate of the token.
 	 * @param y The y coordinate of the token.
 	 * @param value The value of the token.
-	 * @return Whether or not the token would be capturable.
+	 * @return Whether or not placing the token would put it in a state of capture.
 	 */
-	private boolean isCapturable(int x, int y, int value) {
-		return (this.checkCapturable(x, y, value, +1, +0) ||
-				this.checkCapturable(x, y, value, +0, +1) ||
-				this.checkCapturable(x, y, value, +1, +1) ||
-				this.checkCapturable(x, y, value, +1, -1));
+	public boolean isCaptured(int x, int y, int value) {
+		return (this.checkCaptured(x, y, value, +1, +0) ||
+				this.checkCaptured(x, y, value, +0, +1) ||
+				this.checkCaptured(x, y, value, +1, +1) ||
+				this.checkCaptured(x, y, value, +1, -1));
 	}
 	
 	/**
@@ -477,7 +478,7 @@ public class Gomoku {
 	 * @param value The value of the token.
 	 * @return Whether or not the token is in danger of being captured.
 	 */
-	private boolean isInDanger(int x, int y, int value) {
+	public boolean isInDanger(int x, int y, int value) {
 		return (this.checkDanger(x, y, value, +1, +0) ||
 				this.checkDanger(x, y, value, +0, +1) ||
 				this.checkDanger(x, y, value, +1, +1) ||
@@ -558,7 +559,7 @@ public class Gomoku {
 	 * @param value The value of the token.
 	 * @return Whether or not the token would create a double three.
 	 */
-	private boolean createsDoubleThree(int x, int y, int value) {
+	public boolean createsDoubleThree(int x, int y, int value) {
 		int threes = 0;
 		if (this.createsFreeThree(x, y, value, +1, +0)) {
 			threes++;
@@ -597,7 +598,7 @@ public class Gomoku {
 			return (false);
 		}
 		
-		if (this.isCapturable(x, y, value)) {
+		if (this.isCaptured(x, y, value)) {
 			player.report(this, "You may not place a token into a capture!");
 			return (false);
 		}
