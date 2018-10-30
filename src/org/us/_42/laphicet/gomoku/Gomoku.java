@@ -14,10 +14,18 @@ public class Gomoku {
 	public static final int ADJACENT_TO_WIN = 5;
 	
 	public static enum AdjacentAlignment {
-		HORIZONTAL,
-		VERTICAL,
-		DIAG_POSITIVE,
-		DIAG_NEGATIVE
+		HORIZONTAL(1, 0),
+		VERTICAL(0, 1),
+		DIAG_POSITIVE(1, 1),
+		DIAG_NEGATIVE(1, -1);
+		
+		public final int dx;
+		public final int dy;
+		
+		private AdjacentAlignment(int dx, int dy) {
+			this.dx = dx;
+			this.dy = dy;
+		}
 	}
 	
 	private static class Token {
@@ -134,12 +142,12 @@ public class Gomoku {
 	}
 	
 	/**
-	 * Get the number of pieces adjacent of a certain piece (including itself) in a specific alignment.
+	 * Get the number of tokens adjacent of a certain token (including itself) in a specific alignment.
 	 * 
 	 * @param x The x coordinate of the token in question.
 	 * @param y The y coordinate of the token in question.
 	 * @param alignment The alignment on the adjacent tokens.
-	 * @return The number of pieces adjacent of a certain piece, including itself.
+	 * @return The number of tokens adjacent of a certain token, including itself.
 	 */
 	public int getAdjacentTokenCount(int x, int y, AdjacentAlignment alignment) {
 		if (x < 0 || x >= BOARD_LENGTH || y < 0 || y >= BOARD_LENGTH) {
@@ -188,27 +196,29 @@ public class Gomoku {
 	 * @param x The added token's x coordinate.
 	 * @param y The added token's y coordinate.
 	 * @param token The token being placed.
-	 * @param dx The x direction to update.
-	 * @param dy The y direction to update.
 	 * @param alignment The alignment on the adjacent tokens.
 	 */
-	private void updateAdjacents(int x, int y, Token token, int dx, int dy, AdjacentAlignment alignment) {
+	private void updateAdjacents(int x, int y, Token token, AdjacentAlignment alignment) {
+		int dx = alignment.dx;
+		int dy = alignment.dy;
+		int index = alignment.ordinal();
+		
 		int prev = 0;
 		int next = 0;
 		
 		if (this.getToken(x - dx, y - dy) == token.value) {
-			prev = this.board[y - dy][x - dx].adjacent[alignment.ordinal()];
+			prev = this.board[y - dy][x - dx].adjacent[index];
 		}
 		if (this.getToken(x + dx, y + dy) == token.value) {
-			next = this.board[y + dy][x + dx].adjacent[alignment.ordinal()];
+			next = this.board[y + dy][x + dx].adjacent[index];
 		}
 		
-		token.adjacent[alignment.ordinal()] = prev + 1 + next;
+		token.adjacent[index] = prev + 1 + next;
 		for (int i = 1; i <= prev; i++) {
-			this.board[y - (dy * i)][x - (dx * i)].adjacent[alignment.ordinal()] = token.adjacent[alignment.ordinal()];
+			this.board[y - (dy * i)][x - (dx * i)].adjacent[index] = token.adjacent[index];
 		}
 		for (int i = 1; i <= next; i++) {
-			this.board[y + (dy * i)][x + (dx * i)].adjacent[alignment.ordinal()] = token.adjacent[alignment.ordinal()];
+			this.board[y + (dy * i)][x + (dx * i)].adjacent[index] = token.adjacent[index];
 		}
 	}
 	
@@ -226,10 +236,10 @@ public class Gomoku {
 		}
 		
 		this.board[y][x] = new Token(value);
-		this.updateAdjacents(x, y, this.board[y][x], 1, +0, AdjacentAlignment.HORIZONTAL);
-		this.updateAdjacents(x, y, this.board[y][x], 0, +1, AdjacentAlignment.VERTICAL);
-		this.updateAdjacents(x, y, this.board[y][x], 1, +1, AdjacentAlignment.DIAG_POSITIVE);
-		this.updateAdjacents(x, y, this.board[y][x], 1, -1, AdjacentAlignment.DIAG_NEGATIVE);
+		this.updateAdjacents(x, y, this.board[y][x], AdjacentAlignment.HORIZONTAL);
+		this.updateAdjacents(x, y, this.board[y][x], AdjacentAlignment.VERTICAL);
+		this.updateAdjacents(x, y, this.board[y][x], AdjacentAlignment.DIAG_POSITIVE);
+		this.updateAdjacents(x, y, this.board[y][x], AdjacentAlignment.DIAG_NEGATIVE);
 		return (true);
 	}
 	
@@ -240,17 +250,19 @@ public class Gomoku {
 	 * @param x The added token's x coordinate.
 	 * @param y The added token's y coordinate.
 	 * @param token The token being removed.
-	 * @param dx The x direction to update.
-	 * @param dy The y direction to update.
 	 * @param alignment The alignment on the adjacent tokens.
 	 */
-	private void resetAdjacents(int x, int y, Token token, int dx, int dy, AdjacentAlignment alignment) {
+	private void resetAdjacents(int x, int y, Token token, AdjacentAlignment alignment) {
+		int dx = alignment.dx;
+		int dy = alignment.dy;
+		int index = alignment.ordinal();
+		
 		int prev = 0;
 		for (int i = 1; this.getToken(x - (dx * i), y - (dy * i)) == token.value; i++) {
 			prev++;
 		}
 		for (int i = 1; i <= prev; i++) {
-			this.board[y - (dy * i)][x - (dx * i)].adjacent[alignment.ordinal()] = prev;
+			this.board[y - (dy * i)][x - (dx * i)].adjacent[index] = prev;
 		}
 		
 		int next = 0;
@@ -258,7 +270,7 @@ public class Gomoku {
 			next++;
 		}
 		for (int i = 1; i <= next; i++) {
-			this.board[y + (dy * i)][x + (dx * i)].adjacent[alignment.ordinal()] = next;
+			this.board[y + (dy * i)][x + (dx * i)].adjacent[index] = next;
 		}
 	}
 	
@@ -273,10 +285,10 @@ public class Gomoku {
 			return;
 		}
 		
-		this.resetAdjacents(x, y, this.board[y][x], 1, +0, AdjacentAlignment.HORIZONTAL);
-		this.resetAdjacents(x, y, this.board[y][x], 0, +1, AdjacentAlignment.VERTICAL);
-		this.resetAdjacents(x, y, this.board[y][x], 1, +1, AdjacentAlignment.DIAG_POSITIVE);
-		this.resetAdjacents(x, y, this.board[y][x], 1, -1, AdjacentAlignment.DIAG_NEGATIVE);
+		this.resetAdjacents(x, y, this.board[y][x], AdjacentAlignment.HORIZONTAL);
+		this.resetAdjacents(x, y, this.board[y][x], AdjacentAlignment.VERTICAL);
+		this.resetAdjacents(x, y, this.board[y][x], AdjacentAlignment.DIAG_POSITIVE);
+		this.resetAdjacents(x, y, this.board[y][x], AdjacentAlignment.DIAG_NEGATIVE);
 		
 		if (this.board[y][x] == this.check5) {
 			this.logs.add(this.players[this.check5.value - 1].name(this.check5.value) + " no longer has 5 tokens in a row!");
@@ -338,7 +350,6 @@ public class Gomoku {
 		this.applyCapture(x, y, value, +1, +0);
 		this.applyCapture(x, y, value, +0, -1);
 		this.applyCapture(x, y, value, +0, +1);
-		
 		this.applyCapture(x, y, value, -1, +1);
 		this.applyCapture(x, y, value, +1, +1);
 		this.applyCapture(x, y, value, +1, -1);
