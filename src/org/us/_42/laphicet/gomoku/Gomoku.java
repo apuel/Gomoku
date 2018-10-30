@@ -291,7 +291,7 @@ public class Gomoku {
 		this.resetAdjacents(x, y, this.board[y][x], AdjacentAlignment.DIAG_NEGATIVE);
 		
 		if (this.board[y][x] == this.check5) {
-			this.logs.add(this.players[this.check5.value - 1].name(this.check5.value) + " no longer has 5 tokens in a row!");
+			this.logs.add(this.players[this.check5.value - 1].name(this, this.check5.value) + " no longer has 5 tokens in a row!");
 			this.check5 = null;
 		}
 		
@@ -322,14 +322,18 @@ public class Gomoku {
 			int v2 = this.getToken(x2, y2);
 			
 			if (v1 > 0 && v1 != value && v2 > 0 && v2 != value) {
-				this.logs.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v1 - 1].name(v1), x1, y1));
-				this.logs.add(String.format(CAPTURE_FORMAT, player.name(value), this.players[v2 - 1].name(v2), x2, y2));
+				this.logs.add(String.format(CAPTURE_FORMAT, player.name(this, value), this.players[v1 - 1].name(this, v1), x1, y1));
+				this.logs.add(String.format(CAPTURE_FORMAT, player.name(this, value), this.players[v2 - 1].name(this, v2), x2, y2));
 				this.placed[v1 - 1]--;
 				this.placed[v2 - 1]--;
 				this.clearToken(x1, y1);
 				this.clearToken(x2, y2);
 				this.captures[this.turn % PLAYER_COUNT]++;
 				
+				if (this.reporter != null) {
+					this.reporter.reportChange(this, x1, y1, 0);
+					this.reporter.reportChange(this, x2, y2, 0);
+				}
 				for (PlayerController p : this.set) {
 					p.informChange(this, x1, y1, 0);
 					p.informChange(this, x2, y2, 0);
@@ -620,7 +624,7 @@ public class Gomoku {
 				if (this.board[y][x].adjacent[i] >= ADJACENT_TO_WIN) {
 					this.check5 = this.board[y][x];
 					this.logs.add(String.format("%s placed at least %d tokens in a row!",
-							this.players[value - 1].name(value), ADJACENT_TO_WIN));
+							this.players[value - 1].name(this, value), ADJACENT_TO_WIN));
 					this.logs.add("This move must be countered before the next turn or they will win!");
 					break;
 				}
@@ -630,14 +634,14 @@ public class Gomoku {
 			for (int i = 0; i < 4; i++) {
 				if (this.check5.adjacent[i] >= ADJACENT_TO_WIN) {
 					this.winner = this.check5.value;
-					this.logs.add(this.players[this.check5.value - 1].name(this.check5.value) + " has won!");
+					this.logs.add(this.players[this.check5.value - 1].name(this, this.check5.value) + " has won!");
 					break;
 				}
 			}
 			
 			if (this.winner == 0) {
 				this.logs.add(String.format("%s no longer has %d tokens in a row!",
-						this.players[this.check5.value - 1].name(this.check5.value), ADJACENT_TO_WIN));
+						this.players[this.check5.value - 1].name(this, this.check5.value), ADJACENT_TO_WIN));
 				this.check5 = null;
 				this.checkAdjacent(x, y, value);
 			}
@@ -662,13 +666,13 @@ public class Gomoku {
 			
 			this.setToken(this.x, this.y, value);
 			this.placed[this.turn % PLAYER_COUNT]++;
-			this.logs.add(String.format("%s placed a token at %d, %d.", player.name(value), this.x, this.y));
+			this.logs.add(String.format("%s placed a token at %d, %d.", player.name(this, value), this.x, this.y));
 			
 			this.applyCaptures(this.x, this.y, value);
 			int captures = this.captures[this.turn % PLAYER_COUNT];
 			if (this.check5 == null && captures >= CAPTURES_TO_WIN) {
 				this.winner = value;
-				this.logs.add(String.format("%s has captured %d times and won!", player.name(value), captures));
+				this.logs.add(String.format("%s has captured %d times and won!", player.name(this, value), captures));
 			}
 			else {
 				this.checkAdjacent(this.x, this.y, value);
@@ -686,7 +690,8 @@ public class Gomoku {
 			}
 			
 			if (this.reporter != null) {
-				this.reporter.logTurn(this, this.x, this.y, value, this.logs);
+				this.reporter.reportChange(this, this.x, this.y, value);
+				this.reporter.logTurn(this, this.logs);
 			}
 			this.logs.clear();
 		}

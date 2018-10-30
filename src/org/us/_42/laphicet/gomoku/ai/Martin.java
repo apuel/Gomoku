@@ -9,7 +9,7 @@ public class Martin implements PlayerController {
 	private Random rng = new Random();
 	
 	@Override
-	public String name(int value) {
+	public String name(Gomoku game, int value) {
 		return ("Martin");
 	}
 	

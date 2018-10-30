@@ -410,7 +410,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
     //
     //=============================================================================================================
 	@Override
-	public void logTurn(Gomoku game, int x, int y, int value, Collection<String> logs) {
+	public void logTurn(Gomoku game, Collection<String> logs) {
 		for (String log : logs) {
 			this.report.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 1.0f, 1.0f}, log));
 			this.debug.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 1.0f, 1.0f}, log));
@@ -422,7 +422,17 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	@Override
-	public String name(int value) {
+	public void reportChange(Gomoku game, int x, int y, int value) {
+		if (value != 0) {
+			this.pieces.add(new Piece(x + 1, y + 1, value - 1));
+		}
+		else {
+			this.pieces.remove(new Piece(x + 1, y + 1, 0));
+		}
+	}
+	
+	@Override
+	public String name(Gomoku game, int value) {
 		if (value == 1) {
 			return (playerNames[0]);
 		}
@@ -443,14 +453,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	@Override
-	public void informChange(Gomoku game, int x, int y, int value) {
-		if (value != 0) {
-			this.pieces.add(new Piece(x + 1, y + 1, value - 1));
-		}
-		else {
-			this.pieces.remove(new Piece(x + 1, y + 1, 0));
-		}
-	}
+	public void informChange(Gomoku game, int x, int y, int value) { }
 	
 	@Override
 	public void informWinner(Gomoku game, int value) { }

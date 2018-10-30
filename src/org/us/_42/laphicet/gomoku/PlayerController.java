@@ -4,11 +4,12 @@ public interface PlayerController {
 	/**
 	 * Returns a name for the Player.
 	 * 
+	 * @param game The Gomoku game controller.
 	 * @param value A value representing the player's token.
 	 * This can be used to implement multiple players within one PlayerController.
 	 * @return A name.
 	 */
-	public String name(int value);
+	public String name(Gomoku game, int value);
 	
 	/**
 	 * Reports an error message to the player.

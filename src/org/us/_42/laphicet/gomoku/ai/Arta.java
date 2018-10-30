@@ -6,7 +6,7 @@ import org.us._42.laphicet.gomoku.PlayerController;
 public class Arta implements PlayerController {
 
 	@Override
-	public String name(int value) {
+	public String name(Gomoku game, int value) {
 		return ("Arta");
 	}
 
