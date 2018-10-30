@@ -21,8 +21,9 @@ public class TextUtil {
 	public final float SCALE = 10f;
 	
 	/**
-	 * @throws IOException 
+	 * Setups and inits the textutil for use
 	 * 
+	 * @throws IOException  in the event buffering fails
 	 */
 	public TextUtil(String path, int elementInRow, int elementInColumn) throws IOException {
 			fontImage = Renderer.getBufferedImage(path);
@@ -32,7 +33,7 @@ public class TextUtil {
 	}
 	
 	/**
-	 * 
+	 * Creates and renders the characters for drawing strings
 	 */
 	public void initAlphabet() {
 		int x = 1;
@@ -49,12 +50,13 @@ public class TextUtil {
 	}
 	
 	/**
+	 * Draws a string onto the screen
 	 * 
-	 * @param line
-	 * @param x
-	 * @param y
-	 * @param size
-	 * @param color
+	 * @param line The message being drawn
+	 * @param x The starting x coord of the message
+	 * @param y The starting y coord of the message
+	 * @param size The text size
+	 * @param color The text color
 	 */
 	public void drawString(String line, int x, int y, float size, Float[] color) {
 		int newWidth = (int) (width * (size / SCALE));
@@ -70,6 +72,15 @@ public class TextUtil {
 		glColor3f(1.0f, 1.0f, 1.0f);
 	}
 	
+	/**
+	 * Draws a string onto the screen backwards
+	 * 
+	 * @param line The message being drawn
+	 * @param x The starting x coord of the message
+	 * @param y The starting y coord of the message
+	 * @param size The text size
+	 * @param color The text color
+	 */
 	public void drawStringBackwards(String line, int x, int y, float size, Float[] color) {
 		int newWidth = (int) (width * (size / SCALE));
 		int newHeight = (int) (height * (size / SCALE));

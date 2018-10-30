@@ -97,6 +97,13 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		}
 	}
 	
+	/**
+	 * Setups GL environment 
+	 * 
+	 * @param screen The window info that is being passed in
+	 * @param x The width of the screen
+	 * @param y The height of the screen
+	 */
     private void setupGL(long screen, int x, int y) {
     	glfwMakeContextCurrent(screen);
     	GL.createCapabilities();
@@ -141,6 +148,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
     	}
     }
     
+    /**
+     * Renders the report onto the visualizer
+     */
 	private void renderReports() {
 		int x = 60;
 		int y = 60;
@@ -154,6 +164,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		}
 	}
 	
+	/**
+	 * Renders info the debug console
+	 */
 	private void renderDebug() {
 		int x = 50;
 		int y = 950;
@@ -167,28 +180,27 @@ public class Visualizer implements PlayerController, GameStateReporter {
 			}
 		}
 	}
-	
-	private void renderStats(Gomoku game) {
+	 
+	/**
+	 * Renders the stats with info from the game
+	 * 
+	 * @param turn The current turn count
+	 * @param tokenP1 The token placed by player 1
+	 * @param tokenP2 The token placed by player 2
+	 * @param captureP1 Total captures made by player 1
+	 * @param captureP2 Total captures made by player 2
+	 */
+	private void renderStats(int turn, int tokenP1, int tokenP2, int captureP1, int captureP2) {
 		textutil.drawString("TURN", (int)(515 -  (2f * (textutil.width * 3/textutil.SCALE))), 1170, 3, new Float[]{0.0f, 0.0f, 0.0f});
 		textutil.drawString(playerNames[0], 70, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
 		textutil.drawStringBackwards(playerNames[1], 950, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
-		if (game != null) {
-			String gameTurn = Integer.toString(game.getTurn());
-			textutil.drawString(gameTurn, (int)(515 -  ((gameTurn.length() / 2f) * (textutil.width * 3/textutil.SCALE))), 1130, 3, new Float[]{1.0f, 1.0f, 1.0f});
-			textutil.drawString("Tokens Played: " + game.getTokensPlaced(1), 70, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-			textutil.drawStringBackwards("Tokens Played: " + game.getTokensPlaced(2), 950, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-			textutil.drawString("Captures Made: " + game.getCaptureCount(1), 70, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-			textutil.drawStringBackwards("Captures Made: " + game.getCaptureCount(2), 950, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-			Renderer.renderTexture(this.playerPiece[game.getTurn() % 2], 500, 1220, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
-		}
-		else {
-			textutil.drawString("0", 500, 1130, 3, new Float[]{1.0f, 1.0f, 1.0f});
-			textutil.drawString("Tokens Played: 0", 70, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-			textutil.drawStringBackwards("Tokens Played: 0", 950, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-			textutil.drawString("Captures Made: 0", 70, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-			textutil.drawStringBackwards("Captures Made: 0", 950, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-			Renderer.renderTexture(this.playerPiece[0], 500, 1220, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
-		}
+		String gameTurn = Integer.toString(turn);
+		textutil.drawString(gameTurn, (int)(515 -  ((gameTurn.length() / 2f) * (textutil.width * 3/textutil.SCALE))), 1130, 3, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawString("Tokens Played: " + tokenP1, 70, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawStringBackwards("Tokens Played: " + tokenP2, 950, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawString("Captures Made: " + captureP1, 70, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawStringBackwards("Captures Made: " + captureP2, 950, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+		Renderer.renderTexture(this.playerPiece[turn % 2], 500, 1220, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
 	}
 
     
@@ -207,6 +219,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		this.backgroundTexture = Renderer.initTexture(this.bgBuffer, 0, 0, this.bgBuffer.getWidth(), this.bgBuffer.getHeight(), false);
 	}
 	
+	/**
+	 * The loop to allow user to select the character piece they want to use
+	 */
 	private void charSelect() {
 		while (currentPlayerPickingChar < 2) {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -231,6 +246,13 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		}
 	}
 	
+	/**
+	 * Allows users to identify what they pick
+	 * x and y allows us to identify which piece they picked based off the location
+	 * 
+	 * @param x The x coord of their selection
+	 * @param y The y coord of their selection
+	 */
 	private void pickChar(double x, double y) {
 		for (int i = 0, x1 = 200, x2 = 240; i < 8; i++, x1+= 80, x2 += 80) {
 			if (x >= x1 && x <= x2 && y >= 630 && y < 670 && !availableChar[i]) {
@@ -285,6 +307,11 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		glfwTerminate();
 	}
 	
+	/**
+	 * Handles results for the game
+	 * 
+	 * @param game The game object
+	 */
 	public void results(Gomoku game) {
 		this.updateBoard(game);
 		while (!glfwWindowShouldClose(this.window)) {
@@ -293,6 +320,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		}
 	}
 	
+	/**
+	 * Updates the debug console and renders it
+	 */
 	private void updateConsole() {
 		glfwMakeContextCurrent(console);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -300,6 +330,11 @@ public class Visualizer implements PlayerController, GameStateReporter {
         glfwSwapBuffers(this.console);
 	}
 	
+	/**
+	 * Updates the visualizer and renders it
+	 * 
+	 * @param game The game object for stat rendering
+	 */
 	private void updateBoard(Gomoku game) {
 		glfwMakeContextCurrent(window);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -307,12 +342,18 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		this.renderBoard();
 		this.renderPieces();
 		this.renderReports();
-		this.renderStats(game);
+		if (game != null) {
+			this.renderStats(game.getTurn(), game.getTokensPlaced(1), game.getTokensPlaced(2), game.getCaptureCount(1), game.getCaptureCount(2));
+		}
+		else {
+			this.renderStats(0, 0, 0, 0, 0);
+		}
 		glfwSwapBuffers(this.window);
 	}
 	
 	/**
 	 * Scans for key changes on the GL window.
+	 * It handles character selection as well as tabulation for debug console
 	 * 
 	 * @param coords The output buffer for game-board coordinates.
 	 */
