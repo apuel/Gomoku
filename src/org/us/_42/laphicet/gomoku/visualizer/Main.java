@@ -75,6 +75,7 @@ public class Main {
 		
 		vis.start();
 		game.auto();
+		vis.results(game);
 		vis.end();
 	}
 }

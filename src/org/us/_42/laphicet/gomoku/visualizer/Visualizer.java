@@ -6,8 +6,6 @@ import org.us._42.laphicet.gomoku.Gomoku;
 import org.us._42.laphicet.gomoku.GameStateReporter;
 import org.us._42.laphicet.gomoku.PlayerController;
 
-import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
-
 import org.lwjgl.BufferUtils;
 
 import static org.lwjgl.glfw.Callbacks.*;
@@ -177,16 +175,16 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		if (game != null) {
 			String gameTurn = Integer.toString(game.getTurn());
 			textutil.drawString(gameTurn, (int)(515 -  ((gameTurn.length() / 2f) * (textutil.width * 3/textutil.SCALE))), 1130, 3, new Float[]{1.0f, 1.0f, 1.0f});
-			textutil.drawString("Piece Played: " + game.getPiecesPlaced(1), 70, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-			textutil.drawStringBackwards("Piece Played: " + game.getPiecesPlaced(2), 950, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawString("Tokens Played: " + game.getTokensPlaced(1), 70, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawStringBackwards("Tokens Played: " + game.getTokensPlaced(2), 950, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 			textutil.drawString("Captures Made: " + game.getCaptureCount(1), 70, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-			textutil.drawStringBackwards("Captures Made: " + game.getCaptureCount(1), 950, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawStringBackwards("Captures Made: " + game.getCaptureCount(2), 950, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 			Renderer.renderTexture(this.playerPiece[game.getTurn() % 2], 500, 1220, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
 		}
 		else {
-			textutil.drawString("0", 500, 1130, 3, new Float[]{0.0f, 0.0f, 0.0f});
-			textutil.drawString("Piece Played: 0", 70, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-			textutil.drawStringBackwards("Piece Played: 0", 950, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawString("0", 500, 1130, 3, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawString("Tokens Played: 0", 70, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+			textutil.drawStringBackwards("Tokens Played: 0", 950, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 			textutil.drawString("Captures Made: 0", 70, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 			textutil.drawStringBackwards("Captures Made: 0", 950, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 			Renderer.renderTexture(this.playerPiece[0], 500, 1220, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
@@ -226,7 +224,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 			}
         	glfwSwapBuffers(this.window);
         	glfwPollEvents();
-			scan(new int[]{});
+			scan(null);
 			if (glfwWindowShouldClose(this.window)) {
 				System.exit(0);
 			}
@@ -287,6 +285,14 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		glfwTerminate();
 	}
 	
+	public void results(Gomoku game) {
+		this.updateBoard(game);
+		while (!glfwWindowShouldClose(this.window)) {
+			glfwPollEvents();
+			scan(null);
+		}
+	}
+	
 	private void updateConsole() {
 		glfwMakeContextCurrent(console);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -334,7 +340,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
     	}
     	
     	
-    	if (currentPlayerPickingChar > 1) {
+    	if (coords != null && currentPlayerPickingChar > 1) {
     		if (!this.mousePressed && glfwGetMouseButton(this.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
     			glfwGetCursorPos(this.window, this.mouseX, this.mouseY);
     			coords[0] = (int)Math.round(this.mouseX.get(0)/BOARD_SPACE) - 1;
@@ -345,7 +351,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
     			this.mousePressed = false;
     		}
     	}
-    	else {
+    	else if (currentPlayerPickingChar < 2) {
     		if (!this.mousePressed && glfwGetMouseButton(this.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
     			glfwGetCursorPos(this.window, this.mouseX, this.mouseY);
     			this.pickChar(this.mouseX.get(0), this.mouseY.get(0));
@@ -363,7 +369,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
     //
     //=============================================================================================================
 	@Override
-	public void logTurn(Gomoku game, int x, int y, byte value, Collection<String> logs) {
+	public void logTurn(Gomoku game, int x, int y, int value, Collection<String> logs) {
 		for (String log : logs) {
 			this.report.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 1.0f, 1.0f}, log));
 			this.debug.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 1.0f, 1.0f}, log));
@@ -375,7 +381,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	@Override
-	public String name(byte value) {
+	public String name(int value) {
 		if (value == 1) {
 			return (playerNames[0]);
 		}
@@ -396,7 +402,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	@Override
-	public void informMove(Gomoku game, int x, int y, byte value) {
+	public void informChange(Gomoku game, int x, int y, int value) {
 		if (value != 0) {
 			this.pieces.add(new Piece(x + 1, y + 1, value - 1));
 		}
@@ -406,13 +412,17 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	@Override
-	public boolean getMove(Gomoku game, byte piece, int[] coords) {
+	public void informWinner(Gomoku game, int value) { }
+	
+	@Override
+	public boolean getMove(Gomoku game, int piece, int[] coords) {
 		while (coords[0] == -1 && !glfwWindowShouldClose(this.window)) {
 			glfwPollEvents();
 			scan(coords);		
 		}
 		if (glfwWindowShouldClose(this.window)) {
 			game.abort();
+			return (false);
 		}
 		return (true);
 	}

@@ -10,7 +10,7 @@ public class InputPlayerController implements PlayerController {
 	private static final Scanner scanner = new Scanner(System.in);
 	
 	@Override
-	public String name(byte value) {
+	public String name(int value) {
 		return ("User " + value);
 	}
 	
@@ -21,10 +21,13 @@ public class InputPlayerController implements PlayerController {
 	}
 	
 	@Override
-	public void informMove(Gomoku game, int x, int y, byte value) { }
+	public void informChange(Gomoku game, int x, int y, int value) { }
 	
 	@Override
-	public boolean getMove(Gomoku game, byte piece, int[] coords) {
+	public void informWinner(Gomoku game, int value) { }
+	
+	@Override
+	public boolean getMove(Gomoku game, int piece, int[] coords) {
 		System.out.print("Next move ('x y'): ");
 		try {
 			String input = scanner.nextLine();

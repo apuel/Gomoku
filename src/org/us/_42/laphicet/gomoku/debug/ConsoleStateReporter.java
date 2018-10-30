@@ -7,11 +7,11 @@ import org.us._42.laphicet.gomoku.Gomoku;
 
 public class ConsoleStateReporter implements GameStateReporter {
 	@Override
-	public void logTurn(Gomoku game, int x, int y, byte piece, Collection<String> logs) {
+	public void logTurn(Gomoku game, int x, int y, int piece, Collection<String> logs) {
 		System.out.println("[Game State]\n---------------------------------------------------------");
 		for (int yi = 0; yi < Gomoku.BOARD_LENGTH; yi++) {
 			for (int xi = 0; xi < Gomoku.BOARD_LENGTH; xi++) {
-				int position = game.getPiece(xi, yi);
+				int position = game.getToken(xi, yi);
 				
 				if (xi == x && yi == y) {
 					System.out.print(String.format("[%d]", position));
