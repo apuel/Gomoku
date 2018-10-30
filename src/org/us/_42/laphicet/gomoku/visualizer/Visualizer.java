@@ -456,15 +456,17 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	public void informWinner(Gomoku game, int value) { }
 	
 	@Override
-	public boolean getMove(Gomoku game, int piece, int[] coords) {
+	public boolean getMove(Gomoku game, int piece, long key) {
+		int[] coords = new int[] {-1, -1};
 		while (coords[0] == -1 && !glfwWindowShouldClose(this.window)) {
 			glfwPollEvents();
-			scan(coords);		
+			scan(coords);
 		}
 		if (glfwWindowShouldClose(this.window)) {
 			game.abort();
 			return (false);
 		}
+		game.submitMove(coords[0], coords[1], key);
 		return (true);
 	}
 }

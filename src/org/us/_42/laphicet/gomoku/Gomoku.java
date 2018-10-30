@@ -1,14 +1,17 @@
 package org.us._42.laphicet.gomoku;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 public class Gomoku {
 	public static final int BOARD_LENGTH = 19;
 	public static final int PLAYER_COUNT = 2;
 	public static final int CAPTURES_TO_WIN = 10;
+	public static final int ADJACENT_TO_WIN = 5;
 	
 	private static class Token {
 		private int[] adjacent = new int[4];
@@ -26,6 +29,12 @@ public class Gomoku {
 	
 	private PlayerController[] players = new PlayerController[PLAYER_COUNT];
 	private Set<PlayerController> set = new HashSet<PlayerController>();
+	
+	private int x = -1;
+	private int y = -1;
+	
+	private Random keygen = new SecureRandom();
+	private long key = 0;
 	
 	private int[] captures = new int[PLAYER_COUNT];
 	private int[] placed = new int[PLAYER_COUNT];
@@ -53,7 +62,7 @@ public class Gomoku {
 		
 		for (int i = 0; i < PLAYER_COUNT; i++) {
 			if (players[i] == null) {
-				throw new IllegalArgumentException("Player may not be null!");
+				throw new IllegalArgumentException("Players may not be null!");
 			}
 			this.players[i] = players[i];
 			this.set.add(players[i]);
@@ -132,6 +141,20 @@ public class Gomoku {
 			return (this.board[y][x].value);
 		}
 		return (0);
+	}
+	
+	/**
+	 * Submits the move for the current player.
+	 * 
+	 * @param x The x coordinate to place at.
+	 * @param y The y coordinate to place at.
+	 * @param key This MUST be the same key as passed by {@link PlayerController#getMove(Gomoku, int, long)}.
+	 */
+	public void submitMove(int x, int y, long key) {
+		if (this.key == key) {
+			this.x = x;
+			this.y = y;
+		}
 	}
 	
 	/**
@@ -482,7 +505,7 @@ public class Gomoku {
 			ncount++;
 		}
 		
-		return ((prev + 1 + next) >= 3);
+		return ((prev + 1 + next) == 3);
 	}
 	
 	/**
@@ -528,7 +551,7 @@ public class Gomoku {
 		}
 		
 		if (token != 0) {
-			player.report(this, "There is already a token at that position!");
+			player.report(this, String.format("There is already a token at (%d, %d)!", x, y));
 			return (false);
 		}
 		
@@ -546,7 +569,7 @@ public class Gomoku {
 	}
 	
 	/**
-	 * Checks if the placed piece binds a row of 5 or more tokens.
+	 * Checks if the placed piece binds a row of ADJACENT_TO_WIN or more tokens.
 	 * If it does, it saves the context of the token and waits a turn to check for interruptions.
 	 * If not interrupted, a player is awarded with a win.
 	 * 
@@ -554,12 +577,14 @@ public class Gomoku {
 	 * @param y The y coordinate of the placed token.
 	 * @param value The value of the placed token.
 	 */
-	private void checkFor5(int x, int y, int value) {
+	private void checkAdjacent(int x, int y, int value) {
 		if (this.check5 == null) {
 			for (int i = 0; i < 4; i++) {
-				if (this.board[y][x].adjacent[i] >= 5) {
+				if (this.board[y][x].adjacent[i] >= ADJACENT_TO_WIN) {
 					this.check5 = this.board[y][x];
-					this.logs.add(this.players[value - 1].name(value) + " placed at least 5 tokens in a row!");
+					this.logs.add(
+							String.format("%s placed at least %d tokens in a row!",
+									this.players[value - 1].name(value), ADJACENT_TO_WIN));
 					this.logs.add("This move must be countered before the next turn or they will win!");
 					break;
 				}
@@ -567,7 +592,7 @@ public class Gomoku {
 		}
 		else {
 			for (int i = 0; i < 4; i++) {
-				if (this.check5.adjacent[i] >= 5) {
+				if (this.check5.adjacent[i] >= ADJACENT_TO_WIN) {
 					this.winner = this.check5.value;
 					this.logs.add(this.players[this.check5.value - 1].name(this.check5.value) + " has won!");
 					break;
@@ -575,9 +600,10 @@ public class Gomoku {
 			}
 			
 			if (this.winner == 0) {
-				this.logs.add(this.players[this.check5.value - 1].name(this.check5.value) + " no longer has 5 tokens in a row!");
+				this.logs.add(String.format("%s no longer has %d tokens in a row!",
+						this.players[this.check5.value - 1].name(this.check5.value), ADJACENT_TO_WIN));
 				this.check5 = null;
-				this.checkFor5(x, y, value);
+				this.checkAdjacent(x, y, value);
 			}
 		}
 	}
@@ -586,35 +612,30 @@ public class Gomoku {
 	 * Tries to fetch the next input from 
 	 */
 	private void nextTurn() {
-		int[] coords = new int[2];
-		
 		if (this.winner == 0 && !(this.abort)) {
 			PlayerController player = this.players[this.turn % PLAYER_COUNT];
 			int value = (this.turn % PLAYER_COUNT) + 1;
 			
-			coords[0] = -1; coords[1] = -1;
-			if (!player.getMove(this, value, coords)) {
+			this.x = -1; this.y = -1; this.key = keygen.nextLong();
+			if (!player.getMove(this, value, this.key)) {
 				return;
 			}
-			if (!this.validateMove(coords[0], coords[1], value)) {
+			if (!this.validateMove(this.x, this.y, value)) {
 				return;
 			}
 			
-			int x = coords[0];
-			int y = coords[1];
-			
-			this.setToken(x, y, value);
+			this.setToken(this.x, this.y, value);
 			this.placed[this.turn % PLAYER_COUNT]++;
-			this.logs.add(String.format("%s placed a token at %d, %d.", player.name(value), x, y));
+			this.logs.add(String.format("%s placed a token at %d, %d.", player.name(value), this.x, this.y));
 			
-			this.applyCaptures(x, y, value);
+			this.applyCaptures(this.x, this.y, value);
 			int captures = this.captures[this.turn % PLAYER_COUNT];
 			if (captures >= CAPTURES_TO_WIN) {
 				this.winner = value;
 				this.logs.add(String.format("%s has captured %d times and won!", player.name(value), captures));
 			}
 			else {
-				this.checkFor5(x, y, value);
+				this.checkAdjacent(this.x, this.y, value);
 			}
 			
 			if (this.winner == 0) {
@@ -622,14 +643,14 @@ public class Gomoku {
 			}
 			
 			for (PlayerController p : this.set) {
-				p.informChange(this, x, y, value);
+				p.informChange(this, this.x, this.y, value);
 				if (this.winner != 0) {
 					p.informWinner(this, this.winner);
 				}
 			}
 			
 			if (this.reporter != null) {
-				this.reporter.logTurn(this, x, y, value, this.logs);
+				this.reporter.logTurn(this, this.x, this.y, value, this.logs);
 			}
 			this.logs.clear();
 		}

@@ -36,12 +36,14 @@ public interface PlayerController {
 	public void informWinner(Gomoku game, int value);
 	
 	/**
-	 * Returns a move to be played on the given Gomoku game board.
+	 * Requests a move to be played on the given Gomoku game board.
+	 * The move should be submitted with {@link Gomoku#submitMove(int, int, long)}.
+	 * The exact same key should be used as the third argument.
 	 * 
 	 * @param game The Gomoku game controller.
 	 * @param value The piece to be played.
-	 * @param coords The output buffer for the played coordinates. coords[0] = x, coords[1] = y
+	 * @param key Secret value used to submit your move.
 	 * @return Whether the player made a move or not.
 	 */
-	public boolean getMove(Gomoku game, int value, int[] coords);
+	public boolean getMove(Gomoku game, int value, long key);
 }

@@ -27,7 +27,7 @@ public class InputPlayerController implements PlayerController {
 	public void informWinner(Gomoku game, int value) { }
 	
 	@Override
-	public boolean getMove(Gomoku game, int piece, int[] coords) {
+	public boolean getMove(Gomoku game, int piece, long key) {
 		System.out.print("Next move ('x y'): ");
 		try {
 			String input = scanner.nextLine();
@@ -36,8 +36,7 @@ public class InputPlayerController implements PlayerController {
 				try {
 					int x = Integer.parseInt(inputs[0]);
 					int y = Integer.parseInt(inputs[1]);
-					coords[0] = x;
-					coords[1] = y;
+					game.submitMove(x, y, key);
 				}
 				catch (NumberFormatException e) {
 					this.report(game, "Failed to parse coordinates from input!");
