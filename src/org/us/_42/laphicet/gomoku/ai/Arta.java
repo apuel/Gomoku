@@ -39,13 +39,14 @@ public class Arta implements PlayerController {
 	private double[][] scoreBoard = new double[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH];
 	private Set<Play> bestMoves = new TreeSet<Play>();
 	
-	private static final double PLAYERCHAIN = 2;
+	private static final double PLAYERCHAIN = 2.2;
 	private static final double ENEMYCHAIN = 2.1;
-	private static final double CAPTURE = 1.5;
+	private static final double CAPTURE = 2.5;
+	private static final double WILLBECAPTURE = 1.5;
 	
 	
 	/**
-	 * 
+	 * Will validate if chain is big enough to fit, currently doesn't do that but will soon
 	 * @param game
 	 * @param x
 	 * @param y
@@ -101,7 +102,6 @@ public class Arta implements PlayerController {
 	private double checkSurrounding(Gomoku game, int x, int y) {
 		double score = 0;
 		double tmp = 0;
-		int piece = game.getToken(x, y);
 		
 		for (AdjacentAlignment chain : AdjacentAlignment.values()) { 
 			if (game.getToken(x - chain.dx, y - chain.dy) == this.playerNumber) {
@@ -124,6 +124,23 @@ public class Arta implements PlayerController {
 		return (score);
 	}
 	
+	private double captureThreat(Gomoku game, int x, int y) {
+		int piece = game.getToken(x, y);
+		int tmp = 0;
+		int score = 0;
+		
+		for (AdjacentAlignment enemy : AdjacentAlignment.values()) {
+			tmp = game.getToken(x - enemy.dx, y - enemy.dy);
+			if (tmp != piece && tmp != 0 && tmp != -1) {
+				score += game.wouldCapture(x, y, x - enemy.dx, y - enemy.dy, piece) ? 1 : 0;
+			}
+			tmp = game.getToken(x + enemy.dx, y + enemy.dy);
+			if (tmp != piece && tmp != 0 && tmp != -1) {
+				score += game.wouldCapture(x, y, x + enemy.dx, y + enemy.dy, piece) ? 1 : 0;
+			}			
+		}
+		return (Math.pow(WILLBECAPTURE, score));
+	}
 	
 	/**
 	 * Calculates the weight and score for heuristics
@@ -135,7 +152,8 @@ public class Arta implements PlayerController {
 	 * @return
 	 */
 	private double calcValue(Gomoku game, int x, int y) {
-		return (Math.pow(CAPTURE, game.countCaptures(x, y, this.playerNumber))) +
+		return (Math.pow(CAPTURE, game.countCaptures(x, y, this.playerNumber))) -
+				this.captureThreat(game, x, y) +
 				this.checkSurrounding(game, x, y);
 //		return (this.checkSurrounding(game, x, y));
 	}

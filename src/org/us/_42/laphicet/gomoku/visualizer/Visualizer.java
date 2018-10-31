@@ -71,6 +71,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	
 	private String[] playerNames= new String[2];
 	
+	private boolean gameEnd;
+	
 	/**
 	 * Initializes the visualizer window.
 	 */
@@ -314,7 +316,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	 */
 	public void results(Gomoku game) {
 		this.updateBoard(game);
-		while (!glfwWindowShouldClose(this.window)) {
+		this.gameEnd = true;
+		while (this.gameEnd && !glfwWindowShouldClose(this.window)) {
 			glfwPollEvents();
 			scan(null);
 		}
@@ -380,28 +383,40 @@ public class Visualizer implements PlayerController, GameStateReporter {
     		this.debugPressed = false;
     	}
     	
-    	
-    	if (coords != null && currentPlayerPickingChar > 1) {
-    		if (!this.mousePressed && glfwGetMouseButton(this.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-    			glfwGetCursorPos(this.window, this.mouseX, this.mouseY);
-    			coords[0] = (int)Math.round(this.mouseX.get(0)/BOARD_SPACE) - 1;
-    			coords[1] = (int)Math.round(this.mouseY.get(0)/BOARD_SPACE) - (1 + (PIECE_OFFSET / BOARD_SPACE));
-    			this.mousePressed = true;
+    	if (!this.gameEnd) {
+    		if (coords != null && currentPlayerPickingChar > 1) {
+    			if (!this.mousePressed && glfwGetMouseButton(this.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+    				glfwGetCursorPos(this.window, this.mouseX, this.mouseY);
+    				coords[0] = (int)Math.round(this.mouseX.get(0)/BOARD_SPACE) - 1;
+    				coords[1] = (int)Math.round(this.mouseY.get(0)/BOARD_SPACE) - (1 + (PIECE_OFFSET / BOARD_SPACE));
+    				this.mousePressed = true;
+    			}
+    			if (this.mousePressed && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+    				this.mousePressed = false;
+    			}
     		}
-    		if (this.mousePressed && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
-    			this.mousePressed = false;
+    		else if (currentPlayerPickingChar < 2) {
+    			if (!this.mousePressed && glfwGetMouseButton(this.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+    				glfwGetCursorPos(this.window, this.mouseX, this.mouseY);
+    				this.pickChar(this.mouseX.get(0), this.mouseY.get(0));
+    				this.mousePressed = true;
+    			}
+    			if (this.mousePressed && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+    				this.mousePressed = false;
+    			}
     		}
+    	} 
+    	else {
+        	if (KeyCallBack.isKeyDown(GLFW_KEY_SPACE)) {
+        		this.gameEnd = false;
+        		this.pieces.clear();
+        		this.updateBoard(null);
+        	}
     	}
-    	else if (currentPlayerPickingChar < 2) {
-    		if (!this.mousePressed && glfwGetMouseButton(this.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-    			glfwGetCursorPos(this.window, this.mouseX, this.mouseY);
-    			this.pickChar(this.mouseX.get(0), this.mouseY.get(0));
-    			this.mousePressed = true;
-    		}
-    		if (this.mousePressed && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
-    			this.mousePressed = false;
-    		}
-    	}
+    }
+    
+    public boolean isEnded() {
+    	return (this.gameEnd);
     }
 	
     //=============================================================================================================

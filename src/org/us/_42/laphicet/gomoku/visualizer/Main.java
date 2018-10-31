@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 import org.us._42.laphicet.gomoku.GameStateReporter;
 import org.us._42.laphicet.gomoku.Gomoku;
+import org.us._42.laphicet.gomoku.ai.Arta;
 
 public class Main {
 	static {
@@ -71,11 +72,14 @@ public class Main {
 		}
 		
 		Visualizer vis =  new Visualizer();
-		Gomoku game = new Gomoku((GameStateReporter)vis, vis, vis);
+		Gomoku game = new Gomoku((GameStateReporter)vis, vis, new Arta());
 		
 		vis.start();
-		game.auto();
-		vis.results(game);
+		while (!vis.isEnded()) {
+			game.auto();
+			vis.results(game);
+			game.reset();
+		}
 		vis.end();
 	}
 }
