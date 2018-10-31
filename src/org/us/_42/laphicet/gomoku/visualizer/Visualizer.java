@@ -32,7 +32,7 @@ import java.util.Set;
  */
 public class Visualizer implements PlayerController, GameStateReporter {
 	private static final int BOARD_OFFSET = 300;
-	private static final byte BOARD_SIZE = 19;
+	private static final byte BOARD_SIZE = Gomoku.BOARD_LENGTH;
 	private static final byte BOARD_SPACE = 50;
 	private static final int BOARD_WIDTH = (BOARD_SIZE + 1) * BOARD_SPACE;
 	private static final int PIECE_OFFSET = 150;
@@ -51,7 +51,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private int backgroundTexture;
 	private BufferedImage bgBuffer = null;
 	private BufferedImage[] images = new BufferedImage[CHAR_COUNT];
-	private int[] playerPiece = new int[2];
+	private int[] playerPiece = new int[Gomoku.PLAYER_COUNT];
 	
 	private int currentPlayerPickingChar = 0;
 	private boolean[] availableChar = new boolean[8];
@@ -69,7 +69,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private long console;
 	private boolean mousePressed = false;
 	
-	private String[] playerNames= new String[2];
+	private String[] playerNames= new String[Gomoku.PLAYER_COUNT];
 	
 	private boolean gameEnd;
 	
@@ -196,7 +196,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		textutil.drawString("TURN", (int)(515 -  (2f * (textutil.width * 3/textutil.SCALE))), 1170, 3, new Float[]{0.0f, 0.0f, 0.0f});
 		textutil.drawString(playerNames[0], 70, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
 		textutil.drawStringBackwards(playerNames[1], 950, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
-		String gameTurn = Integer.toString(turn);
+		String gameTurn = Integer.toString(turn / 2);
 		textutil.drawString(gameTurn, (int)(515 -  ((gameTurn.length() / 2f) * (textutil.width * 3/textutil.SCALE))), 1130, 3, new Float[]{1.0f, 1.0f, 1.0f});
 		textutil.drawString("Tokens Played: " + tokenP1, 70, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 		textutil.drawStringBackwards("Tokens Played: " + tokenP2, 950, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
