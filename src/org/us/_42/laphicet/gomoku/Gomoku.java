@@ -363,6 +363,29 @@ public class Gomoku {
 	}
 	
 	/**
+	 * Checks if placing token v2 at (x2, y2) would capture token v1 at (x1, y1).
+	 * 
+	 * @param x1 The x coordinate of the token in question.
+	 * @param y1 The y coordinate of the token in question.
+	 * @param v1 The value of the token in question.
+	 * @param x2 The x coordinate of the capturing token.
+	 * @param y2 The y coordinate of the capturing token.
+	 * @param v2 The value of the capturing token.
+	 * @return Whether or not placing token v2 at (x2, y2) would capture token v1 at (x1, y1);
+	 */
+	public boolean wouldCapture(int x1, int y1, int v1, int x2, int y2, int v2) {
+		int dx = x2 - x1;
+		int dy = y2 - y1;
+		
+		if (this.getToken(x1 - (dx * 2), y1 - (dy * 2)) == v2) {
+			if (this.getToken(x - dx, y - dy) == v1) {
+				return (true);
+			}
+		}
+		return (false);
+	}
+	
+	/**
 	 * Checks if placing a token would capture any tokens within the direction of dx and dy.
 	 * 
 	 * @param x The x coordinate of the placed token.
