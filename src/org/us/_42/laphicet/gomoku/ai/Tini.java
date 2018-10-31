@@ -10,6 +10,26 @@ import org.us._42.laphicet.gomoku.Gomoku.AdjacentAlignment;
 import org.us._42.laphicet.gomoku.PlayerController;
 
 public class Tini implements PlayerController {
+	/**
+	 * Used on placements that capture tokens.
+	 */
+	private static final int CAPTURE_PRIORITY = 40;
+	
+	/**
+	 * Used on placements concerned with adjacent tokens.
+	 */
+	private static final int ADJACENT_PRIORITY = 20;
+	
+	/**
+	 * Used on placements saving tokens from capture.
+	 */
+	private static final int DEFENSE_PRIORITY = 50;
+	
+	/**
+	 * Used on placements reducing the risk of a fatal follow up.
+	 */
+	private static final int LAST_DITCH_PRIORITY = 200;
+	
 	private Gomoku game = null;
 	private int value = 1;
 	
@@ -51,31 +71,6 @@ public class Tini implements PlayerController {
 	}
 	
 	/**
-	 * Attempts to find a suitable spot to capture a specific token from.
-	 * 
-	 * @param x The x coordinate of the token to be captured.
-	 * @param y The y coordinate of the token to be captured.
-	 * @param value The value of the token to be captured.
-	 * @param priority The base priority for the capture.
-	 */
-	private void attemptCapture(int x, int y, int value, int priority) {
-		if (!this.game.isInDanger(x, y, value)) {
-			return;
-		}
-		
-		for (AdjacentAlignment alignment : AdjacentAlignment.values()) {
-			int dx = alignment.dx;
-			int dy = alignment.dy;
-			
-			for (int xi = x - (dx * 2), yi = y - (dy * 2); xi != (x + (dx * 3)) || yi != (y + (dy * 3)); xi += dx, yi += dy) {
-				if ((xi != x || yi != y) && this.isFree(xi, yi) && this.game.wouldCapture(x, y, xi, yi, this.value)) {
-					this.evaluate(xi, yi, priority + (this.game.countCaptures(xi, yi, this.value) * 40));
-				}
-			}
-		}
-	}
-	
-	/**
 	 * Get the number of tokens adjacent of an unplaced token (including itself) in a specific alignment.
 	 * 
 	 * @param x The x coordinate of the token in question.
@@ -99,6 +94,42 @@ public class Tini implements PlayerController {
 	}
 	
 	/**
+	 * Attempts to find a suitable spot to capture a specific token from.
+	 * 
+	 * @param x The x coordinate of the token to be captured.
+	 * @param y The y coordinate of the token to be captured.
+	 * @param value The value of the token to be captured.
+	 * @param priority The base priority for the capture.
+	 */
+	private void attemptCapture(int x, int y, int value, int priority) {
+		if (!this.game.isInDanger(x, y, value)) {
+			return;
+		}
+		
+		for (AdjacentAlignment alignment : AdjacentAlignment.values()) {
+			int dx = alignment.dx;
+			int dy = alignment.dy;
+			
+			for (int xi = x - (dx * 2), yi = y - (dy * 2); xi != (x + (dx * 3)) || yi != (y + (dy * 3)); xi += dx, yi += dy) {
+				if ((xi != x || yi != y) && this.isFree(xi, yi) && this.game.wouldCapture(x, y, xi, yi, this.value)) {
+					int p = priority + (this.game.countCaptures(xi, yi, this.value) * CAPTURE_PRIORITY);
+					int adjacent = this.getUpdatedAdjacents(xi, yi, value, alignment);
+					
+					if (adjacent >= Gomoku.ADJACENT_TO_WIN) {
+						this.evaluate(xi, yi, p + LAST_DITCH_PRIORITY);
+					}
+					else if (adjacent > (Gomoku.ADJACENT_TO_WIN / 2)) {
+						this.evaluate(xi, yi, p + (ADJACENT_PRIORITY * 4));
+					}
+					else {
+						this.evaluate(xi, yi, p);
+					}
+				}
+			}
+		}
+	}
+	
+	/**
 	 * Tries to find a suitable location to place a token around a specific token or its adjacent tokens.
 	 * 
 	 * @param x The x coordinate of the token in question.
@@ -116,14 +147,14 @@ public class Tini implements PlayerController {
 				int token = this.game.getToken(xi, yi);
 				if (token != value) {
 					if (this.isFree(xi, yi)) {
-						int p = priority + (this.game.countCaptures(xi, yi, this.value) * 40);
+						int p = priority + (this.game.countCaptures(xi, yi, this.value) * CAPTURE_PRIORITY);
 						int adjacent = this.getUpdatedAdjacents(xi, yi, value, alignment);
 						
 						if (adjacent >= Gomoku.ADJACENT_TO_WIN) {
-							this.evaluate(xi, yi, p + 200);
+							this.evaluate(xi, yi, p + LAST_DITCH_PRIORITY);
 						}
 						else if (adjacent > (Gomoku.ADJACENT_TO_WIN / 2)) {
-							this.evaluate(xi, yi, p + 80);
+							this.evaluate(xi, yi, p + (ADJACENT_PRIORITY * 4));
 						}
 						else {
 							this.evaluate(xi, yi, p);
@@ -150,28 +181,28 @@ public class Tini implements PlayerController {
 			
 			if (value != this.value) {
 				if (adjacent >= Gomoku.ADJACENT_TO_WIN) {
-					this.attemptCapture(x, y, value, 1000);
+					this.attemptCapture(x, y, value, LAST_DITCH_PRIORITY);
 				}
 				else if (adjacent > (Gomoku.ADJACENT_TO_WIN / 2)) {
-					this.attemptCapture(x, y, value, adjacent * 40);
+					this.attemptCapture(x, y, value, adjacent * (ADJACENT_PRIORITY * 2));
 				}
 				else {
-					this.attemptCapture(x, y, value, adjacent * 20);
+					this.attemptCapture(x, y, value, adjacent * ADJACENT_PRIORITY);
 				}
 			}
 			
 			if (adjacent >= (Gomoku.ADJACENT_TO_WIN - 1)) {
-				this.surroundToken(x, y, value, alignment, 200);
+				this.surroundToken(x, y, value, alignment, LAST_DITCH_PRIORITY);
 			}
 			else if (adjacent > (Gomoku.ADJACENT_TO_WIN / 2)) {
-				this.surroundToken(x, y, value, alignment, adjacent * 40);
+				this.surroundToken(x, y, value, alignment, adjacent * (ADJACENT_PRIORITY * 2));
 			}
 			else {
-				this.surroundToken(x, y, value, alignment, adjacent * 20);
+				this.surroundToken(x, y, value, alignment, adjacent * ADJACENT_PRIORITY);
 			}
 			
 			if (value == this.value && this.game.isInDanger(x, y, value)) {
-				this.surroundToken(x, y, value, alignment, 50 * adjacent);
+				this.surroundToken(x, y, value, alignment, adjacent * DEFENSE_PRIORITY);
 			}
 		}
 	}
