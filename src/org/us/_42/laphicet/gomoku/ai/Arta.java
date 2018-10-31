@@ -40,7 +40,7 @@ public class Arta implements PlayerController {
 	private Set<Play> bestMoves = new TreeSet<Play>();
 	
 	private static final double PLAYERCHAIN = 2;
-	private static final double ENEMYCHAIN = 2.5;
+	private static final double ENEMYCHAIN = 2.1;
 	private static final double CAPTURE = 1.5;
 	
 	
@@ -122,14 +122,6 @@ public class Arta implements PlayerController {
 			tmp = 0;
 		}
 		return (score);
-//		return (game.getAdjacentTokenCount(x + 1, y + 0, AdjacentAlignment.HORIZONTAL) +
-//				game.getAdjacentTokenCount(x - 1, y + 0, AdjacentAlignment.HORIZONTAL) +
-//				game.getAdjacentTokenCount(x + 0, y + 1, AdjacentAlignment.VERTICAL) +
-//				game.getAdjacentTokenCount(x + 0, y - 0, AdjacentAlignment.VERTICAL) +
-//				game.getAdjacentTokenCount(x + 1, y + 1, AdjacentAlignment.DIAG_POSITIVE) +
-//				game.getAdjacentTokenCount(x - 1, y - 1, AdjacentAlignment.DIAG_POSITIVE) +
-//				game.getAdjacentTokenCount(x - 1, y + 1, AdjacentAlignment.DIAG_NEGATIVE) +
-//				game.getAdjacentTokenCount(x + 1, y - 1, AdjacentAlignment.DIAG_NEGATIVE));
 	}
 	
 	
@@ -143,9 +135,9 @@ public class Arta implements PlayerController {
 	 * @return
 	 */
 	private double calcValue(Gomoku game, int x, int y) {
-//		return (Math.pow(CAPTURE, game.countCaptures(x, y, this.playerNumber)) / 2) +
-//				this.checkSurrounding(game, x, y);
-		return (this.checkSurrounding(game, x, y));
+		return (Math.pow(CAPTURE, game.countCaptures(x, y, this.playerNumber))) +
+				this.checkSurrounding(game, x, y);
+//		return (this.checkSurrounding(game, x, y));
 	}
 	
 	/**
