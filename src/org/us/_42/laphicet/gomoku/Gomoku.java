@@ -795,16 +795,18 @@ public class Gomoku {
 				}
 			}
 			
+			if (this.started) {
+				for (PlayerController p : this.set) {
+					p.gameEnd(this);
+				}
+			}
+			
 			this.logs.clear();
 			this.turn = 0;
 			this.check5 = null;
 			this.winner = 0;
 			this.started = false;
 			this.abort = false;
-			
-			for (PlayerController p : this.set) {
-				p.gameEnd(this);
-			}
 		}
 	}
 	
