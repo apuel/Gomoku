@@ -154,7 +154,7 @@ public class Gomoku {
 		if (x < 0 || x >= BOARD_LENGTH || y < 0 || y >= BOARD_LENGTH) {
 			return (-1);
 		}
-		if (this.board[y][x] != null) {
+		if (this.board[y][x] == null) {
 			return (0);
 		}
 		return (this.board[y][x].adjacent[alignment.ordinal()]);
@@ -363,26 +363,37 @@ public class Gomoku {
 	}
 	
 	/**
-	 * Checks if placing token v2 at (x2, y2) would capture token v1 at (x1, y1).
+	 * Checks if placing a token at (x2, y2) would capture the token at (x1, y1).
 	 * 
 	 * @param x1 The x coordinate of the token in question.
 	 * @param y1 The y coordinate of the token in question.
-	 * @param v1 The value of the token in question.
 	 * @param x2 The x coordinate of the capturing token.
 	 * @param y2 The y coordinate of the capturing token.
-	 * @param v2 The value of the capturing token.
-	 * @return Whether or not placing token v2 at (x2, y2) would capture token v1 at (x1, y1);
+	 * @param value The value of the capturing token.
+	 * @return Whether or not placing a token at (x2, y2) would capture the token at (x1, y1);
 	 */
-	public boolean wouldCapture(int x1, int y1, int v1, int x2, int y2, int v2) {
+	public boolean wouldCapture(int x1, int y1, int x2, int y2, int value) {
+		int token = this.getToken(x1, y1);
+		if (token == value || token <= 0 || value <= 0 || (this.getToken(x2, y2) != 0)) {
+			return (false);
+		}
+		
 		int dx = x2 - x1;
 		int dy = y2 - y1;
 		
-		if (this.getToken(x1 - (dx * 2), y1 - (dy * 2)) == v2) {
-			if (this.getToken(x - dx, y - dy) == v1) {
-				return (true);
-			}
+		int adx = Math.abs(dx);
+		int ady = Math.abs(dy);
+		if ((adx > 2) || (ady > 2) || ((adx != ady) && (adx != 0) && (ady != 0))) {
+			return (false);
 		}
-		return (false);
+		
+		if (adx == 2 || ady == 2) {
+			dx /= 2; dy /= 2;
+			return ((this.getToken(x1 - dx, y1 - dy) == value) && (this.getToken(x1 + dx, y1 + dy) == token));
+		}
+		else {
+			return ((this.getToken(x1 - (dx * 2), y1 - (dy * 2)) == value) && (this.getToken(x1 - dx, y1 - dy) == token));
+		}
 	}
 	
 	/**
