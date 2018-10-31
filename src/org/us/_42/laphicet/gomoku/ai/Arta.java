@@ -4,6 +4,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.us._42.laphicet.gomoku.Gomoku;
+import org.us._42.laphicet.gomoku.Gomoku.AdjacentAlignment;
 import org.us._42.laphicet.gomoku.PlayerController;
 
 public class Arta implements PlayerController {
@@ -37,13 +38,104 @@ public class Arta implements PlayerController {
 
 	private double[][] scoreBoard = new double[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH];
 	private Set<Play> bestMoves = new TreeSet<Play>();
-
 	
+	private static final double PLAYERCHAIN = 2;
+	private static final double ENEMYCHAIN = 2.5;
+	private static final double CAPTURE = 1.5;
+	
+	
+	/**
+	 * 
+	 * @param game
+	 * @param x
+	 * @param y
+	 * @param value
+	 * @param direction 0 = vertical, 1 = horizontal, 2 = diag, 3 = diag neg
+	 * @return
+	 */
+	private int checkChain(Gomoku game, int x, int y, int value, int direction) {
+		int ret = 0;
+		
+		if (direction == 0) {
+			ret += game.getToken(x - 1, y) == value ? 1 : 0;
+			ret += game.getToken(x + 1, y) == value ? 1 : 0;
+		}
+		else if (direction == 1) {
+			ret += game.getToken(x, y - 1) == value ? 1 : 0;
+			ret += game.getToken(x, y + 1) == value ? 1 : 0;
+		}
+		else if (direction == 2) {
+			ret += game.getToken(x - 1, y - 1) == value ? 1 : 0;
+			ret += game.getToken(x + 1, y + 1) == value ? 1 : 0;
+		}
+		else if (direction == 3) {
+			ret += game.getToken(x + 1, y - 1) == value ? 1 : 0;
+			ret += game.getToken(x - 1, y + 1) == value ? 1 : 0;
+		}
+		return (ret);
+	}
+
+	/**
+	 * Checks the surrounding pieces and calculates the weight of how effective
+	 * that piece played will be
+	 * 
+	 * Chaining a piece next to it = 1.5, blocking an enemy = 0.5
+	 * 
+	 * @param game
+	 * @param x
+	 * @param y
+	 * @param d
+	 * @return
+	 */
+//	private double checkSurrounding(Gomoku game, int x, int y) {
+//		return ( this.getScoreLeft(game, x, y, x - 1, y + 0, 0, 0, 0) +
+//				 this.getScoreDown(game, x, y, x + 0, y - 1, 0, 0, 0) +
+//				this.getScoreRight(game, x, y, x + 1, y + 0, 0, 0, 0) +
+//				   this.getScoreUp(game, x, y, x + 0, y + 1, 0, 0, 0) +
+//		     this.getScoreDownLeft(game, x, y, x - 1, y - 1, 0, 0, 0) +
+//			  this.getScoreUpRight(game, x, y, x + 1, y + 1, 0, 0, 0) +
+//			   this.getScoreUpLeft(game, x, y, x - 1, y + 1, 0, 0, 0) +
+//			this.getScoreDownRight(game, x, y, x + 1, y - 1, 0, 0, 0));
+//	}
+	
+	private double checkSurrounding(Gomoku game, int x, int y) {
+		double score = 0;
+		double tmp = 0;
+		int piece = game.getToken(x, y);
+		
+		for (AdjacentAlignment chain : AdjacentAlignment.values()) { 
+			if (game.getToken(x - chain.dx, y - chain.dy) == this.playerNumber) {
+				tmp += Math.pow(PLAYERCHAIN, game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain));
+			}
+			else if (game.getToken(x - chain.dx, y - chain.dy) > 0) {
+				tmp += Math.pow(ENEMYCHAIN, game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain));
+			}
+			if (game.getToken(x + chain.dx, y + chain.dy) == this.playerNumber) {
+				tmp += Math.pow(PLAYERCHAIN, game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain));
+			}
+			else if (game.getToken(x + chain.dx, y + chain.dy) > 0) {
+				tmp += Math.pow(ENEMYCHAIN, game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain));
+			}
+			if (tmp > score) {
+				score = tmp;
+			}
+			tmp = 0;
+		}
+		return (score);
+//		return (game.getAdjacentTokenCount(x + 1, y + 0, AdjacentAlignment.HORIZONTAL) +
+//				game.getAdjacentTokenCount(x - 1, y + 0, AdjacentAlignment.HORIZONTAL) +
+//				game.getAdjacentTokenCount(x + 0, y + 1, AdjacentAlignment.VERTICAL) +
+//				game.getAdjacentTokenCount(x + 0, y - 0, AdjacentAlignment.VERTICAL) +
+//				game.getAdjacentTokenCount(x + 1, y + 1, AdjacentAlignment.DIAG_POSITIVE) +
+//				game.getAdjacentTokenCount(x - 1, y - 1, AdjacentAlignment.DIAG_POSITIVE) +
+//				game.getAdjacentTokenCount(x - 1, y + 1, AdjacentAlignment.DIAG_NEGATIVE) +
+//				game.getAdjacentTokenCount(x + 1, y - 1, AdjacentAlignment.DIAG_NEGATIVE));
+	}
 	
 	
 	/**
 	 * Calculates the weight and score for heuristics
-	 * Captures weight 0.25
+	 * Captures weight (1^possible captures / 2)
 	 * 
 	 * @param game
 	 * @param x
@@ -51,9 +143,9 @@ public class Arta implements PlayerController {
 	 * @return
 	 */
 	private double calcValue(Gomoku game, int x, int y) {
-		double score = 1;
-		score = score + ((game.countCaptures(x, y, this.playerNumber)) * 0.25);
-		return (score);
+//		return (Math.pow(CAPTURE, game.countCaptures(x, y, this.playerNumber)) / 2) +
+//				this.checkSurrounding(game, x, y);
+		return (this.checkSurrounding(game, x, y));
 	}
 	
 	/**
@@ -62,14 +154,17 @@ public class Arta implements PlayerController {
 	 */
 	private void scanBoard(Gomoku game) {
 		this.bestMoves.clear();
+		System.out.println("Begin Score");
 		for (int x = 0, y = 0; x < Gomoku.BOARD_LENGTH && y < Gomoku.BOARD_LENGTH; x++) {
-			this.scoreBoard[x][y] = calcValue(game, x, y);
+			this.scoreBoard[x][y] = (game.getToken(x, y) == 0) ? calcValue(game, x, y) : 0;
 			this.bestMoves.add(new Play(this.scoreBoard[x][y], x, y));
+			System.out.println("SCORE: " + this.scoreBoard[x][y] + " X: " + x + " Y: " + y);
 			if (x == 18) {
 				x = -1;
 				y++;
 			}
 		}
+		System.out.print("End Score");
 	}
 	
 	@Override
@@ -94,7 +189,7 @@ public class Arta implements PlayerController {
 	public boolean getMove(Gomoku game, int value, long key) {
 		if (game.getTurn() == 0) {
 			game.submitMove(9, 9, key);
-			System.out.println("0.0 9 9");
+			System.out.println("Start 0.0 9 9");
 		}
 		else {
 			scanBoard(game);
@@ -104,7 +199,7 @@ public class Arta implements PlayerController {
 					!game.isCaptured(move.x, move.y, value))
 				{
 					game.submitMove(move.x, move.y, key);
-					System.out.println(move.score + " " + move.x + " " + move.y);
+					System.out.println("\nMove Made Score: " + move.score + " X: " + move.x + " Y: " + move.y);
 					break;
 				}
 			}
