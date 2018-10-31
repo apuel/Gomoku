@@ -801,6 +801,11 @@ public class Gomoku {
 				}
 			}
 			
+			for (int i = 0; i < PLAYER_COUNT; i++) {
+				this.captures[i] = 0;
+				this.placed[i] = 0;
+			}
+			
 			this.logs.clear();
 			this.turn = 0;
 			this.check5 = null;
