@@ -2,7 +2,7 @@
 
 Gomoku is a 42 project where you have to design the game and the AI for users to play against. It must allow users to play another user, or face the AI. We are expected to design our own heuristic for the AI and to have it win within X amount of moves against players.
 
-# This variant has a few rules that we must follow.
+# This game has a few rules that we must follow.
 - Capture (As in the Ninuki-renju or Pente variants) : You can remove a pair of your
 opponent’s stones from the board by flanking them with your own stones (See the
 appendix). This rule adds a win condition : If you manage to capture ten of your
