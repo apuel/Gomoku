@@ -1,7 +1,13 @@
 package org.us._42.laphicet.gomoku.ai;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
@@ -40,6 +46,28 @@ public class Tini implements PlayerController {
 	private int y = -1;
 	private int priority = 0;
 	
+	private int nmoves;
+	private Map<Long,Integer> moves = new HashMap<Long,Integer>();
+	private int depth;
+	
+	/**
+	 * Creates a new instance of the Tini Gomoku AI.
+	 * 
+	 * @param nmoves The number of moves to consider at each step.
+	 * @param depth How many turns to consider before making a decision.
+	 */
+	public Tini(int nmoves, int depth) {
+		this.nmoves = nmoves;
+		this.depth = depth;
+	}
+	
+	/**
+	 * Creates a new instance of the Tini Gomoku AI.
+	 */
+	public Tini() {
+		this(1, 0);
+	}
+	
 	/**
 	 * Evaluates if a placement should be made based on priority.
 	 * 
@@ -54,6 +82,18 @@ public class Tini implements PlayerController {
 			this.x = x;
 			this.y = y;
 			this.priority = priority;
+		}
+		
+		if (priority > 0 && this.depth > 0) {
+			long token = ((long)x << 32) | (long)y;
+			
+			if (this.moves.containsKey(token)) {
+				int prev = this.moves.get(token);
+				if (prev > priority) {
+					return;
+				}
+			}
+			this.moves.put(token, priority);
 		}
 	}
 	
@@ -112,14 +152,19 @@ public class Tini implements PlayerController {
 			
 			for (int xi = x - (dx * 2), yi = y - (dy * 2); xi != (x + (dx * 3)) || yi != (y + (dy * 3)); xi += dx, yi += dy) {
 				if ((xi != x || yi != y) && this.isFree(xi, yi) && this.game.wouldCapture(x, y, xi, yi, this.value)) {
-					int p = priority + (this.game.countCaptures(xi, yi, this.value) * CAPTURE_PRIORITY);
+					int captures = this.game.countCaptures(xi, yi, this.value);
+					int p = priority + (captures * CAPTURE_PRIORITY);
 					int adjacent = this.getUpdatedAdjacents(xi, yi, value, alignment);
+					
+					if ((this.game.getCaptureCount(this.value) + captures) >= (Gomoku.CAPTURES_TO_WIN - 1)) {
+						p += (captures * (CAPTURE_PRIORITY * 4));
+					}
 					
 					if (adjacent >= Gomoku.ADJACENT_TO_WIN) {
 						this.evaluate(xi, yi, p + LAST_DITCH_PRIORITY);
 					}
 					else if (adjacent > (Gomoku.ADJACENT_TO_WIN / 2)) {
-						this.evaluate(xi, yi, p + (ADJACENT_PRIORITY * 4));
+						this.evaluate(xi, yi, p + (adjacent * ADJACENT_PRIORITY));
 					}
 					else {
 						this.evaluate(xi, yi, p);
@@ -154,7 +199,7 @@ public class Tini implements PlayerController {
 							this.evaluate(xi, yi, p + LAST_DITCH_PRIORITY);
 						}
 						else if (adjacent > (Gomoku.ADJACENT_TO_WIN / 2)) {
-							this.evaluate(xi, yi, p + (ADJACENT_PRIORITY * 4));
+							this.evaluate(xi, yi, p + (adjacent * ADJACENT_PRIORITY));
 						}
 						else {
 							this.evaluate(xi, yi, p);
@@ -211,6 +256,10 @@ public class Tini implements PlayerController {
 	 * Evaluates logical moves that could be made and decides on one.
 	 */
 	private void evaluateMoves() {
+		if (this.priority < 0) {
+			return;
+		}
+		
 		for (long token : this.tokens) {
 			int x = (int)(token >> 32);
 			int y = (int)(token & 0xFFFFFFFF);
@@ -244,6 +293,77 @@ public class Tini implements PlayerController {
 		}
 	}
 	
+	private Tini[] participants = null;
+	private Tini self = null;
+	
+	/**
+	 * Evaluates following turns that the game may play into.
+	 */
+	private void evaluateDepth() {
+		if (this.priority > 0 && this.nmoves > 1 && this.depth > 0) {
+			if (this.participants == null) {
+				this.participants = new Tini[Gomoku.PLAYER_COUNT];
+				for (int i = 0; i < Gomoku.PLAYER_COUNT; i++) {
+					if (i == (this.value - 1)) {
+						this.participants[i] = new Tini(this.nmoves, this.depth - 1);
+					}
+					else {
+						this.participants[i] = new Tini();
+					}
+				}
+				this.self = this.participants[this.value - 1];
+			}
+			
+			List<Entry<Long,Integer>> moves = new ArrayList<Entry<Long,Integer>>(this.moves.entrySet());
+			moves.sort(new Comparator<Entry<Long,Integer>>() {
+				@Override
+				public int compare(Entry<Long,Integer> a, Entry<Long,Integer> b) {
+					return (b.getValue() - a.getValue());
+				}
+			});
+			
+			for (Entry<Long,Integer> move : moves.subList(0, (this.nmoves > moves.size()) ? moves.size() : this.nmoves)) {
+				Gomoku game = this.game.clone(null, this.participants);
+				
+				for (int i = 0; i < Gomoku.PLAYER_COUNT; i++) {
+					this.participants[i].gameStart(game, i + 1);
+				}
+				
+				long token = move.getKey();
+				int priority = move.getValue();
+				
+				self.x = (int)(token >> 32);
+				self.y = (int)(token & 0xFFFFFFFF);
+				self.priority = -1;
+				game.next();
+				
+				for (int i = 0; i < this.depth; i++) {
+					game.next();
+					
+					int idx = (game.getTurn() - 1) % Gomoku.PLAYER_COUNT;
+					if (this.participants[idx] != self) {
+						//TODO - scale priority higher when the opponent does worse
+					}
+					else {
+						//TODO - scale priority higher when we do better
+					}
+				}
+				
+				for (Tini tini : this.participants) {
+					tini.gameEnd(game);
+				}
+				
+				if (priority > this.priority) {
+					this.x = (int)(token >> 32);
+					this.y = (int)(token & 0xFFFFFFFF);
+					this.priority = priority;
+				}
+			}
+			
+			moves.clear();
+		}
+	}
+	
 	@Override
 	public String name(Gomoku game, int value) {
 		return (this.getClass().getSimpleName());
@@ -259,10 +379,6 @@ public class Tini implements PlayerController {
 		if (this.game == null || this.game != game) {
 			return;
 		}
-		
-		this.x = -1;
-		this.y = -1;
-		this.priority = 0;
 		
 		long token = ((long)x << 32) | (long)y;
 		
@@ -294,7 +410,13 @@ public class Tini implements PlayerController {
 		}
 		
 		this.evaluateMoves();
+		this.evaluateDepth();
 		game.submitMove(this.x, this.y, key);
+		
+		this.x = -1;
+		this.y = -1;
+		this.priority = 0;
+		this.moves.clear();
 		return (true);
 	}
 	
@@ -320,6 +442,11 @@ public class Tini implements PlayerController {
 		if (this.game == game) {
 			this.game = null;
 			this.tokens.clear();
+			
+			this.x = -1;
+			this.y = -1;
+			this.priority = 0;
+			this.moves.clear();
 		}
 	}
 }

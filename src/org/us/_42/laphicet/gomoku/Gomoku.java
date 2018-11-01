@@ -29,11 +29,20 @@ public class Gomoku {
 	}
 	
 	private static class Token {
-		private int[] adjacent = new int[4];
+		private int[] adjacent = new int[AdjacentAlignment.values().length];
 		private final int value;
 		
 		private Token(int value) {
 			this.value = value;
+		}
+		
+		@Override
+		public Token clone() {
+			Token result = new Token(this.value);
+			for (AdjacentAlignment alignment : AdjacentAlignment.values()) {
+				result.adjacent[alignment.ordinal()] = this.adjacent[alignment.ordinal()];
+			}
+			return (result);
 		}
 	}
 	
@@ -92,6 +101,45 @@ public class Gomoku {
 	 */
 	public Gomoku(PlayerController... players) {
 		this(null, players);
+	}
+	
+	/**
+	 * See {@link Gomoku#clone()}.
+	 * Allows specification of a new {@link GameStateReporter} and {@link PlayerController}s.
+	 * 
+	 * @param reporter A handler for updated game states.
+	 * @param players The player controllers representing the participants.
+	 * @return A clone of this instance.
+	 */
+	public Gomoku clone(GameStateReporter reporter, PlayerController... players) {
+		Gomoku result = new Gomoku(reporter, players);
+		for (int y = 0; y < BOARD_LENGTH; y++) {
+			for (int x = 0; x < BOARD_LENGTH; x++) {
+				if (this.board[y][x] != null) {
+					result.board[y][x] = this.board[y][x].clone();
+					if (this.check5 == this.board[y][x]) {
+						result.check5 = result.board[y][x];
+					}
+				}
+			}
+		}
+		
+		for (int i = 0; i < PLAYER_COUNT; i++) {
+			result.captures[i] = this.captures[i];
+			result.placed[i] = this.placed[i];
+		}
+		
+		result.logs.addAll(this.logs);
+		result.turn = this.turn;
+		result.winner = this.winner;
+		result.started = this.started;
+		result.abort = this.abort;
+		return (result);
+	}
+	
+	@Override
+	public Gomoku clone() {
+		return (this.clone(this.reporter, this.players));
 	}
 	
 	/**
@@ -237,10 +285,9 @@ public class Gomoku {
 		}
 		
 		this.board[y][x] = new Token(value);
-		this.updateAdjacents(x, y, this.board[y][x], AdjacentAlignment.HORIZONTAL);
-		this.updateAdjacents(x, y, this.board[y][x], AdjacentAlignment.VERTICAL);
-		this.updateAdjacents(x, y, this.board[y][x], AdjacentAlignment.DIAG_POSITIVE);
-		this.updateAdjacents(x, y, this.board[y][x], AdjacentAlignment.DIAG_NEGATIVE);
+		for (AdjacentAlignment alignment : AdjacentAlignment.values()) {
+			this.updateAdjacents(x, y, this.board[y][x], alignment);
+		}
 		return (true);
 	}
 	
@@ -286,10 +333,9 @@ public class Gomoku {
 			return;
 		}
 		
-		this.resetAdjacents(x, y, this.board[y][x], AdjacentAlignment.HORIZONTAL);
-		this.resetAdjacents(x, y, this.board[y][x], AdjacentAlignment.VERTICAL);
-		this.resetAdjacents(x, y, this.board[y][x], AdjacentAlignment.DIAG_POSITIVE);
-		this.resetAdjacents(x, y, this.board[y][x], AdjacentAlignment.DIAG_NEGATIVE);
+		for (AdjacentAlignment alignment : AdjacentAlignment.values()) {
+			this.resetAdjacents(x, y, this.board[y][x], alignment);
+		}
 		
 		if (this.board[y][x] == this.check5) {
 			this.logs.add(this.players[this.check5.value - 1].name(this, this.check5.value) + " no longer has 5 tokens in a row!");
@@ -659,7 +705,7 @@ public class Gomoku {
 	 */
 	private void checkAdjacent(int x, int y, int value) {
 		if (this.check5 == null) {
-			for (int i = 0; i < 4; i++) {
+			for (int i = 0; i < AdjacentAlignment.values().length; i++) {
 				if (this.board[y][x].adjacent[i] >= ADJACENT_TO_WIN) {
 					this.check5 = this.board[y][x];
 					this.logs.add(String.format("%s placed at least %d tokens in a row!",
@@ -670,7 +716,7 @@ public class Gomoku {
 			}
 		}
 		else {
-			for (int i = 0; i < 4; i++) {
+			for (int i = 0; i < AdjacentAlignment.values().length; i++) {
 				if (this.check5.adjacent[i] >= ADJACENT_TO_WIN) {
 					this.winner = this.check5.value;
 					this.logs.add(this.players[this.check5.value - 1].name(this, this.check5.value) + " has won!");
