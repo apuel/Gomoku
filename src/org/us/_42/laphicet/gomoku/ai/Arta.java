@@ -1,5 +1,8 @@
 package org.us._42.laphicet.gomoku.ai;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -9,6 +12,9 @@ import org.us._42.laphicet.gomoku.PlayerController;
 
 public class Arta implements PlayerController {
 
+	/**
+	 * Used to hold the current score and its X Y coords
+	 */
 	private static class Play implements Comparable<Play> {
 		private double score;
 		private final int x;
@@ -21,29 +27,73 @@ public class Arta implements PlayerController {
 		}
 		
 		@Override
-		public boolean equals(Object o) {
-			if (!(o instanceof Play)) {
-				return (false);
-			}
-			return (((Play)o).x == this.x && ((Play)o).y == this.y);
-		}
-		
-		@Override
 		public int compareTo(Play o) {
 			return (Double.compare(o.score, this.score));
 		}
 	}
 	
-	private int playerNumber = 0;
+	/**
+	 * Used to hold the current score and go further in to see what the best moves may be
+	 */
+	private static class Prediction implements Comparable<Prediction> {
+		private Play move;
+		private double totalScore;
+		private List<Prediction> nextPlay = new ArrayList<Prediction>();
+		private int value;
+		
+		private Prediction(Play givePiece, int value) {
+			this.move = givePiece;
+			this.totalScore = 0;
+			this.value = value;
+		}
+		
+		private double highestScore(List<Prediction> checkMove) {
+			double ret = 0;
+			for (Prediction possibleMoves : checkMove) {
+				possibleMoves.getTotal();
+				if (possibleMoves.totalScore > ret) {
+					ret = possibleMoves.totalScore;
+				}
+			}
+			return (ret);
+		}
+		
+		private void getTotal() {
+			if (value == Arta.playerNumber) {
+				this.totalScore += this.move.score;
+			}
+			this.totalScore += this.highestScore(this.nextPlay);
+//			System.out.println("getTotal(); called, total score " + this.totalScore + " value is " + this.value);
+		}
+		
+		@Override
+		public int compareTo(Prediction o) {
+			return (Double.compare(o.move.score, this.move.score));
+		}
+	}
+	
+	private static int playerNumber;
+	private int enemyNumber;
+	private int[] togglePlayer = new int[Gomoku.PLAYER_COUNT];
 
 	private double[][] scoreBoard = new double[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH];
-	private Set<Play> bestMoves = new TreeSet<Play>();
+	private List<Play> bestMoves = new ArrayList<Play>();
 	
-	private static final double PLAYERCHAIN = 2.2;
-	private static final double ENEMYCHAIN = 2.1;
+//	private List<Prediction> minimax = new ArrayList<Prediction>();
+	
+	private static final double PLAYERCHAIN = 2.0;
+	private static final double ENEMYCHAIN = 2.0;
 	private static final double CAPTURE = 2.5;
-	private static final double WILLBECAPTURE = 1.5;
+	private static final double WILLBECAPTURE = 25.0;
 	
+	private final int minmaxAmount;
+	private final int minmaxDepth;
+	
+	
+	public Arta(int amount, int depth) {
+		this.minmaxAmount = amount;
+		this.minmaxDepth = depth;
+	}
 	
 	/**
 	 * Will validate if chain is big enough to fit, currently doesn't do that but will soon
@@ -99,18 +149,18 @@ public class Arta implements PlayerController {
 //			this.getScoreDownRight(game, x, y, x + 1, y - 1, 0, 0, 0));
 //	}
 	
-	private double checkSurrounding(Gomoku game, int x, int y) {
+	private double checkSurrounding(Gomoku game, int x, int y, int value) {
 		double score = 0;
 		double tmp = 0;
 		
 		for (AdjacentAlignment chain : AdjacentAlignment.values()) { 
-			if (game.getToken(x - chain.dx, y - chain.dy) == this.playerNumber) {
+			if (game.getToken(x - chain.dx, y - chain.dy) == value) {
 				tmp += Math.pow(PLAYERCHAIN, game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain));
 			}
 			else if (game.getToken(x - chain.dx, y - chain.dy) > 0) {
 				tmp += Math.pow(ENEMYCHAIN, game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain));
 			}
-			if (game.getToken(x + chain.dx, y + chain.dy) == this.playerNumber) {
+			if (game.getToken(x + chain.dx, y + chain.dy) == value) {
 				tmp += Math.pow(PLAYERCHAIN, game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain));
 			}
 			else if (game.getToken(x + chain.dx, y + chain.dy) > 0) {
@@ -124,24 +174,24 @@ public class Arta implements PlayerController {
 		return (score);
 	}
 	
-	private double captureThreat(Gomoku game, int x, int y) {
-		int piece = game.getToken(x, y);
-		int tmp = 0;
-		int score = 0;
-		
-		for (AdjacentAlignment enemy : AdjacentAlignment.values()) {
-			tmp = game.getToken(x - enemy.dx, y - enemy.dy);
-			if (tmp != piece && tmp != 0 && tmp != -1) {
-				score += game.wouldCapture(x, y, x - enemy.dx, y - enemy.dy, piece) ? 1 : 0;
-			}
-			tmp = game.getToken(x + enemy.dx, y + enemy.dy);
-			if (tmp != piece && tmp != 0 && tmp != -1) {
-				score += game.wouldCapture(x, y, x + enemy.dx, y + enemy.dy, piece) ? 1 : 0;
-			}			
-		}
-		return (Math.pow(WILLBECAPTURE, score));
-	}
-	
+//	private double captureThreat(Gomoku game, int x, int y) {
+//		int piece = game.getToken(x, y);
+//		int tmp = 0;
+//		int score = 0;
+//		
+//		for (AdjacentAlignment enemy : AdjacentAlignment.values()) {
+//			tmp = game.getToken(x - enemy.dx, y - enemy.dy);
+//			if (tmp != piece && tmp != 0 && tmp != -1) {
+//				score += game.wouldCapture(x, y, x - enemy.dx, y - enemy.dy, piece) ? 1 : 0;
+//			}
+//			tmp = game.getToken(x + enemy.dx, y + enemy.dy);
+//			if (tmp != piece && tmp != 0 && tmp != -1) {
+//				score += game.wouldCapture(x, y, x + enemy.dx, y + enemy.dy, piece) ? 1 : 0;
+//			}			
+//		}
+//		return (Math.pow(WILLBECAPTURE, score));
+//	}
+
 	/**
 	 * Calculates the weight and score for heuristics
 	 * Captures weight (1^possible captures / 2)
@@ -151,30 +201,60 @@ public class Arta implements PlayerController {
 	 * @param y
 	 * @return
 	 */
-	private double calcValue(Gomoku game, int x, int y) {
-		return (Math.pow(CAPTURE, game.countCaptures(x, y, this.playerNumber))) -
-				this.captureThreat(game, x, y) +
-				this.checkSurrounding(game, x, y);
-//		return (this.checkSurrounding(game, x, y));
+	private double calcValue(Gomoku game, int x, int y, int value) {
+		return (Math.pow(CAPTURE, game.countCaptures(x, y, Arta.playerNumber)))
+//				- this.captureThreat(game, x, y, value)
+				- (game.isInDanger(x, y, value) ? 0 : WILLBECAPTURE )
+				+ this.checkSurrounding(game, x, y, value);
 	}
 	
 	/**
 	 * This will scan the entire board and fill it with a score. It'll than move all
 	 * the info into an TreeSet of objects where score is tied to its x and y position.
 	 */
-	private void scanBoard(Gomoku game) {
+	private void scanBoard(Gomoku game, double[][] moveBoard, int value) {
 		this.bestMoves.clear();
-		System.out.println("Begin Score");
+//		System.out.println("Begin Score");
 		for (int x = 0, y = 0; x < Gomoku.BOARD_LENGTH && y < Gomoku.BOARD_LENGTH; x++) {
-			this.scoreBoard[x][y] = (game.getToken(x, y) == 0) ? calcValue(game, x, y) : 0;
+			if (moveBoard[x][y] != 0) {
+				this.scoreBoard[x][y] = moveBoard[x][y];
+			}
+			else {
+				this.scoreBoard[x][y] = (game.getToken(x, y) == 0) ? calcValue(game, x, y, value) : 0;
+			}
 			this.bestMoves.add(new Play(this.scoreBoard[x][y], x, y));
-			System.out.println("SCORE: " + this.scoreBoard[x][y] + " X: " + x + " Y: " + y);
+//			System.out.println("SCORE: " + this.scoreBoard[x][y] + " X: " + x + " Y: " + y);
 			if (x == 18) {
 				x = -1;
 				y++;
 			}
 		}
-		System.out.print("End Score");
+		Collections.sort(this.bestMoves);
+//		System.out.print("End Score");
+	}
+	
+	private List<Prediction> getMinimax(List<Prediction> minimax, Gomoku game, int amount, int maxDepth, int currentDepth, double[][] moveBoard, int playerValue) {
+//		Prediction finalMove = new Prediction(new Play(0, -1, -1));
+		List<double[][]> updatedBoard = new ArrayList<double[][]>();
+		
+		int i = 0;
+//		System.out.println(this.bestMoves.size());
+		for (Play move : this.bestMoves) {
+			minimax.add(new Prediction(move, togglePlayer[playerValue % 2]));
+			updatedBoard.add(moveBoard);
+			updatedBoard.get(i)[minimax.get(i).move.x][minimax.get(i).move.y] = togglePlayer[playerValue % 2];
+			System.out.println("Depth : " + currentDepth + " Inserting Piece of X [" + minimax.get(i).move.x + "] Y [" + minimax.get(i).move.y + "] Score - " + minimax.get(i).move.score);
+			if (++i >= amount) {
+				currentDepth++;
+				for (int j = 0; j < amount && currentDepth < maxDepth; j++) {
+//					System.out.println("Passing into scanBoard X " + minimax.get(j).move.x + " Y " + minimax.get(j).move.y);
+					this.scanBoard(game, updatedBoard.get(j), togglePlayer[playerValue % 2]);
+					this.getMinimax(minimax.get(j).nextPlay, game, amount, maxDepth, currentDepth, updatedBoard.get(j), playerValue++);
+				}
+				break; 
+			}
+		}
+		return (minimax);
 	}
 	
 	@Override
@@ -197,19 +277,30 @@ public class Arta implements PlayerController {
 
 	@Override
 	public boolean getMove(Gomoku game, int value, long key) {
+//		System.out.println("Player " + this.playerNumber + " Enemy " + this.enemyNumber);
 		if (game.getTurn() == 0) {
 			game.submitMove(9, 9, key);
-			System.out.println("Start 0.0 9 9");
+//			System.out.println("Start 0.0 9 9");
 		}
 		else {
-			scanBoard(game);
-			for (Play move : this.bestMoves) {
-				if (game.getToken(move.x, move.y) == 0 &&
-					!game.createsDoubleThree(move.x, move.y, value) &&
-					!game.isCaptured(move.x, move.y, value))
+			this.scanBoard(game, new double[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH], 0);
+			List<Prediction> moveToPlay = new ArrayList<Prediction>();
+			moveToPlay = this.getMinimax(new ArrayList<Prediction>(), game,
+					this.minmaxAmount, this.minmaxDepth * Gomoku.PLAYER_COUNT, 0,
+					new double[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH], 0);
+			List<Play> sortPlayList = new ArrayList<Play>();
+			for (Prediction sortItem : moveToPlay) {
+				sortItem.getTotal();
+				sortPlayList.add(new Play(sortItem.totalScore, sortItem.move.x, sortItem.move.y));
+			}
+			Collections.sort(sortPlayList);
+			for (Play playMove : sortPlayList) {
+				if (game.getToken(playMove.x, playMove.y) == 0 &&
+						!game.createsDoubleThree(playMove.x, playMove.y, value) &&
+					!game.isCaptured(playMove.x, playMove.y, value))
 				{
-					game.submitMove(move.x, move.y, key);
-					System.out.println("\nMove Made Score: " + move.score + " X: " + move.x + " Y: " + move.y);
+					game.submitMove(playMove.x, playMove.y, key);
+					System.out.println("\nMove Made Score: " + playMove.score + " X: " + playMove.x + " Y: " + playMove.y);
 					break;
 				}
 			}
@@ -219,7 +310,16 @@ public class Arta implements PlayerController {
 	
 	@Override
 	public void gameStart(Gomoku game, int value) {
-		this.playerNumber = value;
+		if (value == 1) {
+			Arta.playerNumber = value;
+			this.enemyNumber = value + 1;
+		}
+		else {
+			Arta.playerNumber = value;
+			this.enemyNumber = value - 1;
+		}
+		this.togglePlayer[0] = Arta.playerNumber;
+		this.togglePlayer[1] = this.enemyNumber;
 	}
 	
 	@Override
