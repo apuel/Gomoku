@@ -466,6 +466,13 @@ public class Visualizer implements PlayerController, GameStateReporter {
     //=============================================================================================================
 	@Override
 	public void logTurn(Gomoku game, Collection<String> logs) {
+		if (!glfwWindowShouldClose(this.window)) {
+			glfwPollEvents();
+			scan(null);
+		}
+		else {
+			game.abort();
+		}
 		for (String log : logs) {
 			this.addStringToReport(log, 1.0f, 1.0f, 1.0f);
 			this.addStringToConsole(log, 1.0f, 1.0f, 1.0f);
