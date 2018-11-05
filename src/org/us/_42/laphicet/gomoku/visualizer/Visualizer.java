@@ -43,6 +43,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private static final int BG_OFFSET_X = (BOARD_WIDTH - (BOARD_SPACE * 2)) / 2;
 	private static final int BG_OFFSET_Y = ((BOARD_WIDTH + BOARD_OFFSET) - (BOARD_SPACE * 2)) / 2;
 	private static final int CHAR_COUNT = 8;
+    private static final int REPORT_SIZE = 10;
+	private static final int DEBUG_SIZE = 65;
 	
 	private Set<Piece> pieces = new HashSet<Piece>();
 	private List<Entry<Float[],String>> report = new ArrayList<Entry<Float[],String>>();
@@ -64,7 +66,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private DoubleBuffer mouseY = BufferUtils.createDoubleBuffer(1);
 	
 	private TextUtil textutil;
-	private GLFWKeyCallback keyCallback;
+	private GLFWKeyCallback windowKeyCallback;
+	private GLFWKeyCallback consoleKeyCallback;
 	private long window;
 	private long console;
 	private boolean mousePressed = false;
@@ -88,8 +91,10 @@ public class Visualizer implements PlayerController, GameStateReporter {
 			throw new RuntimeException("Failed to create the visualizer window");
 		}
 		
-		this.keyCallback = new KeyCallBack();
-		glfwSetKeyCallback(window, this.keyCallback);
+		this.windowKeyCallback = new KeyCallBack();
+		this.consoleKeyCallback = new KeyCallBack();
+		glfwSetKeyCallback(window, this.windowKeyCallback);
+		glfwSetKeyCallback(console, this.consoleKeyCallback);
 		
 		try {
 			this.textutil = new TextUtil("./img/font.png", 32, 3);
@@ -149,7 +154,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
     		Renderer.renderTexture(this.playerPiece[piece.player], piece.x * BOARD_SPACE, BOARD_WIDTH - (piece.y * BOARD_SPACE) + PIECE_OFFSET, TEXTURE_OFFSET, TEXTURE_OFFSET);
     	}
     }
-    
+	
     /**
      * Renders the report onto the visualizer
      */
@@ -157,7 +162,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		int x = 60;
 		int y = 60;
 		Entry<Float[],String> msg = null;
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < REPORT_SIZE; i++) {
 			if (report.size() > i) {
 				msg = this.report.get(report.size() - 1 - i);
 				this.textutil.drawString(msg.getValue(), x, y, 1, msg.getKey());
@@ -171,14 +176,21 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	 */
 	private void renderDebug() {
 		int x = 50;
-		int y = 950;
+		int z = debug.size();
+		int y;
+		if (z >= 65) {
+			y = 950 - (14 * 64);
+		}
+		else {
+			y = 950 - (14 * (z - 1));
+		}
 		Entry<Float[],String> msg = null;
-		for (int i = 0; i < 65; i++) {
-			if (debug.size() > i) {
-				msg = this.debug.get(debug.size() - 1 - i);
+		for (int i = 0; i < DEBUG_SIZE; i++) {
+			if (z > i) {
+				msg = this.debug.get(z - 1 - i);
 				this.textutil.drawString(">", x, y, 1, new Float[]{ 0.0f, 1.0f, 0.0f});
 				this.textutil.drawString(msg.getValue(), x + 20, y, 1, msg.getKey());
-				y = y - 14;
+				y = y + 14;
 			}
 		}
 	}
@@ -355,6 +367,34 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	/**
+	 * Updates the report list
+	 * @param msg The msg to add to the list
+	 * @param r Red value for RGB
+	 * @param g Green value for RGB
+	 * @param b Blue value for RGB
+	 */
+    private void addStringToReport(String msg, float r, float g, float b) {
+    	this.report.add(new SimpleEntry<Float[],String>(new Float[]{ r, g, b}, msg));
+		while (this.report.size() > REPORT_SIZE) {
+			this.report.remove(0);
+		}
+    }
+    
+	/**
+	 * Updates the console list
+	 * @param msg The msg to add to the list
+	 * @param r Red value for RGB
+	 * @param g Green value for RGB
+	 * @param b Blue value for RGB
+	 */
+    private void addStringToConsole(String msg, float r, float g, float b) {
+    	this.debug.add(new SimpleEntry<Float[],String>(new Float[]{ r, g, b}, msg));
+		while (this.debug.size() > DEBUG_SIZE) {
+			this.debug.remove(0);
+		}
+    }
+	
+	/**
 	 * Scans for key changes on the GL window.
 	 * It handles character selection as well as tabulation for debug console
 	 * 
@@ -427,8 +467,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	@Override
 	public void logTurn(Gomoku game, Collection<String> logs) {
 		for (String log : logs) {
-			this.report.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 1.0f, 1.0f}, log));
-			this.debug.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 1.0f, 1.0f}, log));
+			this.addStringToReport(log, 1.0f, 1.0f, 1.0f);
+			this.addStringToConsole(log, 1.0f, 1.0f, 1.0f);
 		}
 		if (toggleDebug) {
 			this.updateConsole();
@@ -458,8 +498,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	
 	@Override
 	public void report(Gomoku game, String message) {
-		this.report.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 0.0f, 0.0f}, message));
-		this.debug.add(new SimpleEntry<Float[],String>(new Float[]{ 1.0f, 0.0f, 0.0f}, message));
+		this.addStringToReport(message, 1.0f, 0.0f, 0.0f);
+		this.addStringToConsole(message, 1.0f, 0.0f, 0.0f);
 		if (toggleDebug) {
 			this.updateConsole();
 		}
