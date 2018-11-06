@@ -96,6 +96,7 @@ public class Arta implements PlayerController, AIController {
 	private final int minmaxDepth;
 	
 	private double timeTaken;
+//	private long lastKey;
 	
 	
 	public Arta(int amount, int depth) {
@@ -206,17 +207,17 @@ public class Arta implements PlayerController, AIController {
 			}
 			else if (game.getToken(x - chain.dx, y - chain.dy) > 0) {
 				chainLength = game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain);
-//				blocked += checkIfBlocked(game, x - chain.dx - (chain.dx * chainLength), y - chain.dy - (chain.dy * chainLength), value);
+				blocked += checkIfBlocked(game, x - chain.dx, y - chain.dy, value, chainLength, chain, Arta.NEGATIVE);
 				tmp += Math.pow(ENEMYCHAIN, chainLength);
 			}
 			if (game.getToken(x + chain.dx, y + chain.dy) == value) {
 				chainLength = game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain);
-//				blocked += checkIfBlocked(game, x + chain.dx + (chain.dx * chainLength), y + chain.dy + (chain.dy * chainLength), value);
+				blocked += checkIfBlocked(game, x + chain.dx, y + chain.dy, value, chainLength, chain, Arta.POSITIVE);
 				tmp += Math.pow(PLAYERCHAIN, chainLength);
 			}
 			else if (game.getToken(x + chain.dx, y + chain.dy) > 0) {
 				chainLength = game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain);
-//				blocked += checkIfBlocked(game, x + chain.dx + (chain.dx * chainLength), y + chain.dy + (chain.dy * chainLength), value);
+				blocked += checkIfBlocked(game, x + chain.dx, y + chain.dy, value, chainLength, chain, Arta.POSITIVE);
 				tmp += Math.pow(ENEMYCHAIN, chainLength);
 			}
 			tmp /= blocked;
@@ -335,10 +336,15 @@ public class Arta implements PlayerController, AIController {
 //		System.out.println("Begin Score");
 		for (int x = 0, y = 0; x < Gomoku.BOARD_LENGTH && y < Gomoku.BOARD_LENGTH; x++) {
 			if (moveBoard[x][y] != 0) {
-				this.scoreBoard[x][y] = moveBoard[x][y];
+				System.out.println("MOVE BOARD " + x + " " + y);
+				this.scoreBoard[x][y] = -1;
+			}
+			else if (game.getToken(x, y) == 0 && !game.createsDoubleThree(x, y, value) && !game.isCaptured(x,  y,  value)) {
+//					System.out.println("APPROVED MOVE BOARD " + x + " " + y);
+					this.scoreBoard[x][y] =  calcValue(game, x, y, value);
 			}
 			else {
-				this.scoreBoard[x][y] = (game.getToken(x, y) == 0) ? calcValue(game, x, y, value) : 0;
+				this.scoreBoard[x][y] =  0;
 			}
 			this.bestMoves.add(new Play(this.scoreBoard[x][y], x, y));
 //			System.out.println("SCORE: " + this.scoreBoard[x][y] + " X: " + x + " Y: " + y);
@@ -351,6 +357,18 @@ public class Arta implements PlayerController, AIController {
 //		System.out.print("End Score");
 	}
 	
+	/**
+	 * Returns a list of minimax moves 
+	 * 
+	 * @param minimax Current list of moves
+	 * @param game
+	 * @param amount
+	 * @param maxDepth
+	 * @param currentDepth
+	 * @param moveBoard
+	 * @param playerValue
+	 * @return
+	 */
 	private List<Prediction> getMinimax(List<Prediction> minimax, Gomoku game, int amount, int maxDepth, int currentDepth, double[][] moveBoard, int playerValue) {
 //		Prediction finalMove = new Prediction(new Play(0, -1, -1));
 		List<double[][]> updatedBoard = new ArrayList<double[][]>();
@@ -382,8 +400,20 @@ public class Arta implements PlayerController, AIController {
 
 	@Override
 	public void report(Gomoku game, String message) {
+//		long startTime = System.nanoTime();
 		System.out.println(message);
 		System.err.println("[Arta] Tuturuu~");
+//		for (Play playMove : this.bestMoves) {
+//			if (game.getToken(playMove.x, playMove.y) == 0 &&
+//					!game.createsDoubleThree(playMove.x, playMove.y, this.playerNumber) &&
+//				!game.isCaptured(playMove.x, playMove.y, this.playerNumber))
+//			{
+//				System.out.println("\nBACKUP Move Made Score: " + playMove.score + " X: " + playMove.x + " Y: " + playMove.y);
+//				game.submitMove(playMove.x, playMove.y, this.lastKey);
+//				this.timeTaken = (double)(System.nanoTime() - startTime) / NANO;
+//				break;
+//			}
+//		}
 	}
 
 	@Override
@@ -398,6 +428,7 @@ public class Arta implements PlayerController, AIController {
 	public boolean getMove(Gomoku game, int value, long key) {
 //		System.out.println("Player " + this.playerNumber + " Enemy " + this.enemyNumber);
 		long startTime = System.nanoTime();
+//		this.lastKey = key;
 		if (game.getTurn() == 0) {
 			game.submitMove(9, 9, key);
 //			System.out.println("Start 0.0 9 9");
@@ -415,17 +446,19 @@ public class Arta implements PlayerController, AIController {
 			}
 			Collections.sort(sortPlayList);
 			for (Play playMove : sortPlayList) {
+				System.out.println("\nCHECKING VALUE " + key + " KEY " + playMove.score + " X: " + playMove.x + " Y: " + playMove.y);
 				if (game.getToken(playMove.x, playMove.y) == 0 &&
 						!game.createsDoubleThree(playMove.x, playMove.y, value) &&
 					!game.isCaptured(playMove.x, playMove.y, value))
 				{
+					System.out.println("\nMove Made Score: " + key + " KEY " + playMove.score + " X: " + playMove.x + " Y: " + playMove.y);
 					game.submitMove(playMove.x, playMove.y, key);
-					System.out.println("\nMove Made Score: " + playMove.score + " X: " + playMove.x + " Y: " + playMove.y);
 					this.timeTaken = (double)(System.nanoTime() - startTime) / NANO;
 					break;
 				}
 			}
 		}
+		System.out.println("Test");
 		return (true);
 	}
 	
