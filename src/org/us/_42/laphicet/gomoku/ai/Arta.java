@@ -337,7 +337,7 @@ public class Arta implements PlayerController, AIController {
 		for (int x = 0, y = 0; x < Gomoku.BOARD_LENGTH && y < Gomoku.BOARD_LENGTH; x++) {
 			if (moveBoard[x][y] != 0) {
 				System.out.println("MOVE BOARD " + x + " " + y);
-				this.scoreBoard[x][y] = -1;
+				this.scoreBoard[x][y] = moveBoard[x][y];
 			}
 			else if (game.getToken(x, y) == 0 && !game.createsDoubleThree(x, y, value) && !game.isCaptured(x,  y,  value)) {
 //					System.out.println("APPROVED MOVE BOARD " + x + " " + y);
