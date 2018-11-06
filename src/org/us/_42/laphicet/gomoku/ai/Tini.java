@@ -41,6 +41,16 @@ public class Tini implements PlayerController, AIController {
 	 */
 	private static final int FUTILE_PRIORITY = 1000;
 	
+	private static final PlayerController NULL_CONTROLLER = new PlayerController() {
+		@Override public String name(Gomoku game, int value) { return ("null"); }
+		@Override public void report(Gomoku game, String message) { }
+		@Override public void informChange(Gomoku game, int x, int y, int value) { }
+		@Override public void informWinner(Gomoku game, int value) { }
+		@Override public boolean getMove(Gomoku game, int value, long key) { return false; }
+		@Override public void gameStart(Gomoku game, int value) { }
+		@Override public void gameEnd(Gomoku game) { }
+	};
+	
 	private Gomoku game = null;
 	private int value = 1;
 	
@@ -349,6 +359,7 @@ public class Tini implements PlayerController, AIController {
 	
 	private Tini self = null;
 	private Tini next = null;
+	private PlayerController[] controllers = null;
 	
 	/**
 	 * Generates an n-ary tree with possible outcomes for the next 'depth' amount of turns.
@@ -358,9 +369,21 @@ public class Tini implements PlayerController, AIController {
 			return;
 		}
 		
-		if (this.self == null || this.next == null) {
+		if (this.self == null || this.next == null || this.controllers == null) {
 			this.self = new Tini(this.node.nodes.length, this.depth - 1);
 			this.next = new Tini(this.node.nodes.length, this.depth - 1);
+			this.controllers = new PlayerController[Gomoku.PLAYER_COUNT];
+			for (int i = 0; i < Gomoku.PLAYER_COUNT; i++) {
+				if (i == (this.value - 1)) {
+					this.controllers[i] = self;
+				}
+				else if (i == (this.value % Gomoku.PLAYER_COUNT)) {
+					this.controllers[i] = next;
+				}
+				else {
+					this.controllers[i] = NULL_CONTROLLER;
+				}
+			}
 		}
 		
 		List<Entry<Long,Integer>> moves = new ArrayList<Entry<Long,Integer>>(this.moves.entrySet());
@@ -383,7 +406,7 @@ public class Tini implements PlayerController, AIController {
 			int y = (int)(token & 0xFFFFFFFF);
 			int priority = move.getValue();
 			
-			Gomoku game = this.game.clone(null, this.self);
+			Gomoku game = this.game.clone(null, this.controllers);
 			this.self.gameStart(game, this.value);
 			this.next.gameStart(game, (this.value % Gomoku.PLAYER_COUNT) + 1);
 			
