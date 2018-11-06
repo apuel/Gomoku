@@ -1,16 +1,18 @@
 package org.us._42.laphicet.gomoku.ai;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.IntStream;
 
 import org.us._42.laphicet.gomoku.Gomoku;
 import org.us._42.laphicet.gomoku.Gomoku.AdjacentAlignment;
 import org.us._42.laphicet.gomoku.PlayerController;
 
-public class Arta implements PlayerController {
+public class Arta implements PlayerController, AIController {
 
 	/**
 	 * Used to hold the current score and its X Y coords
@@ -82,12 +84,18 @@ public class Arta implements PlayerController {
 //	private List<Prediction> minimax = new ArrayList<Prediction>();
 	
 	private static final double PLAYERCHAIN = 2.0;
-	private static final double ENEMYCHAIN = 2.0;
+	private static final double ENEMYCHAIN = 3.5;
 	private static final double CAPTURE = 2.5;
 	private static final double WILLBECAPTURE = 25.0;
+	private static final double NANO = 1000000000.0;
+	
+	private static final int NEGATIVE = 0;
+	private static final int POSITIVE = 1;
 	
 	private final int minmaxAmount;
 	private final int minmaxDepth;
+	
+	private double timeTaken;
 	
 	
 	public Arta(int amount, int depth) {
@@ -149,30 +157,140 @@ public class Arta implements PlayerController {
 //			this.getScoreDownRight(game, x, y, x + 1, y - 1, 0, 0, 0));
 //	}
 	
+
+	private int checkNegativeAdjacency(Gomoku game, int x, int y, int value, int chainLength, AdjacentAlignment align, int currentPiece) {
+		for (int i = chainLength; i < 6; i++) {
+			currentPiece = game.getToken(x - (align.dx * i), y - (align.dy * i));
+			if (currentPiece != 0 || currentPiece != value) {
+				 return (1);
+			}
+		}
+		return (0);
+	}
+	
+	private int checkIfBlocked(Gomoku game, int x, int y, int value, int chainLength, AdjacentAlignment align, int direction) {
+		int currentPiece;
+		
+//		if (align == AdjacentAlignment.HORIZONTAL) {
+			if (direction == Arta.NEGATIVE) {
+				for (int i = chainLength; i < 6; i++) {
+					currentPiece = game.getToken(x - (align.dx * i), y - (align.dy * i));
+					if (currentPiece != 0 || currentPiece != value) {
+						 return (1);
+					}
+				}
+			}
+			else {
+				for (int i = chainLength; i < 6; i++) {
+					currentPiece = game.getToken(x + (align.dx * i), y + (align.dy * i));
+					if (currentPiece != 0 || currentPiece != value) {
+						 return (1);
+					}
+				}
+			}
+//		}
+		return (0);
+	}
+	
 	private double checkSurrounding(Gomoku game, int x, int y, int value) {
 		double score = 0;
 		double tmp = 0;
+		int blocked = 1;
+		int chainLength = 0;
 		
 		for (AdjacentAlignment chain : AdjacentAlignment.values()) { 
 			if (game.getToken(x - chain.dx, y - chain.dy) == value) {
-				tmp += Math.pow(PLAYERCHAIN, game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain));
+				chainLength = game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain);
+				blocked += checkIfBlocked(game, x - chain.dx, y - chain.dy, value, chainLength, chain, Arta.NEGATIVE);
+				tmp += Math.pow(PLAYERCHAIN, chainLength);
 			}
 			else if (game.getToken(x - chain.dx, y - chain.dy) > 0) {
-				tmp += Math.pow(ENEMYCHAIN, game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain));
+				chainLength = game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain);
+//				blocked += checkIfBlocked(game, x - chain.dx - (chain.dx * chainLength), y - chain.dy - (chain.dy * chainLength), value);
+				tmp += Math.pow(ENEMYCHAIN, chainLength);
 			}
 			if (game.getToken(x + chain.dx, y + chain.dy) == value) {
-				tmp += Math.pow(PLAYERCHAIN, game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain));
+				chainLength = game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain);
+//				blocked += checkIfBlocked(game, x + chain.dx + (chain.dx * chainLength), y + chain.dy + (chain.dy * chainLength), value);
+				tmp += Math.pow(PLAYERCHAIN, chainLength);
 			}
 			else if (game.getToken(x + chain.dx, y + chain.dy) > 0) {
-				tmp += Math.pow(ENEMYCHAIN, game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain));
+				chainLength = game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain);
+//				blocked += checkIfBlocked(game, x + chain.dx + (chain.dx * chainLength), y + chain.dy + (chain.dy * chainLength), value);
+				tmp += Math.pow(ENEMYCHAIN, chainLength);
 			}
+			tmp /= blocked;
 			if (tmp > score) {
 				score = tmp;
 			}
+			blocked = 1;
 			tmp = 0;
 		}
 		return (score);
 	}
+	
+//	private double checkSurrounding(Gomoku game, int x, int y, int value) {
+//		double score = 0;
+//		double tmp = 0;
+//		
+//		/*
+//		 * player/enemyChainLength keeps track of the longer chain in a direction
+//		 * index 0 = negative, index 1 = positive
+//		 * 
+//		 * totalChainLength is used to combine both sides into one long chain
+//		 * 
+//		 * playedBlockedCount starts at 1, but represents how many pieces block
+//		 * the chain - 1
+//		 * 
+//		 * valueNegative is the current value of the piece at the negative position, while
+//		 * valuePositive is the current value of the position position, this is used
+//		 * to actually track the chains
+//		 */
+//		int playerChainLength[] = new int[2];
+//		int playerTotalChainLength = 0;
+//		int enemyChainLength[] = new int[2];
+//		int enemyTotalChainLength = 0;
+//		int playerBlockedCount = 1;
+//		int enemyBlockedCount = 1;
+//		int valueNegative = 0;
+//		int valuePositive = 0;
+//		
+//		for (AdjacentAlignment chain : AdjacentAlignment.values()) { 
+//			valueNegative = game.getToken(x - chain.dx, y - chain.dy);
+//			if (valueNegative == value) {
+//				valueNegative = value;
+//				playerChainLength[Arta.NEGATIVE] += game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain);
+////				playerBlockedCount += this.checkIfBlocked(game, x - chain.dx, y - chain.dy, value, playerChainLength[Arta.NEGATIVE], chain, 0);
+//			}
+//			else if (valueNegative > 0) {
+//				valueNegative = value;
+//				enemyChainLength[Arta.NEGATIVE] += game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain);
+//			}
+//			
+//			valuePositive = game.getToken(x + chain.dx, y + chain.dy);
+//			if (valuePositive == value && valueNegative == valuePositive) {
+//				playerChainLength[Arta.POSITIVE] += game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain);
+//			}
+//			else if (valuePositive > 0 && valueNegative > 0 && valueNegative != valuePositive) {
+//				enemyChainLength[Arta.POSITIVE] += game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain);
+//			}
+//			
+//			playerTotalChainLength = IntStream.of(playerChainLength).sum();
+//			enemyTotalChainLength = IntStream.of(enemyChainLength).sum();
+//			tmp += Math.pow(PLAYERCHAIN, playerTotalChainLength) / playerBlockedCount;
+//			tmp += Math.pow(ENEMYCHAIN, enemyTotalChainLength) / enemyBlockedCount;
+//			if (tmp > score) {
+//				score = tmp;
+//			}
+//			
+//			Arrays.fill(playerChainLength, 0);
+//			Arrays.fill(enemyChainLength, 0);
+//			playerBlockedCount = 1;
+//			enemyBlockedCount = 1;
+//			tmp = 0;
+//		}
+//		return (score);
+//	}
 	
 //	private double captureThreat(Gomoku game, int x, int y) {
 //		int piece = game.getToken(x, y);
@@ -238,12 +356,12 @@ public class Arta implements PlayerController {
 		List<double[][]> updatedBoard = new ArrayList<double[][]>();
 		
 		int i = 0;
-//		System.out.println(this.bestMoves.size());
 		for (Play move : this.bestMoves) {
+//			System.out.println(this.bestMoves.size());
 			minimax.add(new Prediction(move, togglePlayer[playerValue % 2]));
 			updatedBoard.add(moveBoard);
 			updatedBoard.get(i)[minimax.get(i).move.x][minimax.get(i).move.y] = togglePlayer[playerValue % 2];
-			System.out.println("Depth : " + currentDepth + " Inserting Piece of X [" + minimax.get(i).move.x + "] Y [" + minimax.get(i).move.y + "] Score - " + minimax.get(i).move.score);
+//			System.out.println("Depth : " + currentDepth + " Inserting Piece of X [" + minimax.get(i).move.x + "] Y [" + minimax.get(i).move.y + "] Score - " + minimax.get(i).move.score);
 			if (++i >= amount) {
 				currentDepth++;
 				for (int j = 0; j < amount && currentDepth < maxDepth; j++) {
@@ -264,6 +382,7 @@ public class Arta implements PlayerController {
 
 	@Override
 	public void report(Gomoku game, String message) {
+		System.out.println(message);
 		System.err.println("[Arta] Tuturuu~");
 	}
 
@@ -278,6 +397,7 @@ public class Arta implements PlayerController {
 	@Override
 	public boolean getMove(Gomoku game, int value, long key) {
 //		System.out.println("Player " + this.playerNumber + " Enemy " + this.enemyNumber);
+		long startTime = System.nanoTime();
 		if (game.getTurn() == 0) {
 			game.submitMove(9, 9, key);
 //			System.out.println("Start 0.0 9 9");
@@ -301,6 +421,7 @@ public class Arta implements PlayerController {
 				{
 					game.submitMove(playMove.x, playMove.y, key);
 					System.out.println("\nMove Made Score: " + playMove.score + " X: " + playMove.x + " Y: " + playMove.y);
+					this.timeTaken = (double)(System.nanoTime() - startTime) / NANO;
 					break;
 				}
 			}
@@ -324,5 +445,10 @@ public class Arta implements PlayerController {
 	
 	@Override
 	public void gameEnd(Gomoku game) {
+	}
+
+	@Override
+	public double getTimeElapsed() {
+		return (this.timeTaken);
 	}
 }

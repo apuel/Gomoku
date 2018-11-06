@@ -76,6 +76,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	
 	private boolean gameEnd;
 	
+//	private double botTime;
+	
 	/**
 	 * Initializes the visualizer window.
 	 */
@@ -215,6 +217,12 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		textutil.drawString("Captures Made: " + captureP1, 70, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 		textutil.drawStringBackwards("Captures Made: " + captureP2, 950, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 		Renderer.renderTexture(this.playerPiece[turn % 2], 500, 1220, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
+//		if ((turn % 2) == 1 && this.botTime != -1) {
+//			textutil.drawString("Time Elapsed: " + this.botTime, 70, 1130, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+//		}
+//		else if (this.botTime != -1){
+//			textutil.drawStringBackwards("Time Elapsed: " + this.botTime, 950, 1130, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+//		}
 	}
 
     
@@ -271,7 +279,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		for (int i = 0, x1 = 200, x2 = 240; i < 8; i++, x1+= 80, x2 += 80) {
 			if (x >= x1 && x <= x2 && y >= 630 && y < 670 && !availableChar[i]) {
 				this.playerPiece[currentPlayerPickingChar] = this.textures[i];
-				this.playerNames[currentPlayerPickingChar] = PIECENAME[i];
+				if (this.playerNames[currentPlayerPickingChar] == null) {
+					this.playerNames[currentPlayerPickingChar] = PIECENAME[i];
+				}
 				availableChar[i] = true;
 				currentPlayerPickingChar++;
 			}
@@ -287,7 +297,14 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	/**
 	 * Initialize and display the visualizer window and its initial states.
 	 */
-	public void start() {
+	public void start(Gomoku game) {
+		for (int i = 0; i < Gomoku.PLAYER_COUNT; i++) {
+			PlayerController player = game.getPlayerController(i + 1);
+			if (player != this) {
+				this.playerNames[i] = player.name(game, i + 1);
+			}
+		}
+		
 		this.init();
 		try {
 			this.images[0] = Renderer.getBufferedImage("./img/victini.png");
@@ -309,7 +326,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		this.loadCharacters();
 		this.charSelect();
 		
-		updateBoard(null);
+		this.updateBoard(game);
 	}
 	
 	/**
@@ -485,12 +502,17 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	
 	@Override
 	public void reportChange(Gomoku game, int x, int y, int value) {
-		PlayerController player = game.getPlayerController(value);
-		if (player instanceof AIController) {
-			((AIController)player).getTimeElapsed();
-		}
-		
 		if (value != 0) {
+			PlayerController player = game.getPlayerController(value);
+//			this.playerNames[value - 1] = player.name(game, value);
+			if (player instanceof AIController) {
+//				this.botTime = ((AIController)player).getTimeElapsed();
+				this.addStringToConsole("Time Taken to move for Player " + player.name(game, value) + ": " + ((AIController)player).getTimeElapsed(), 1.0f, 0.0f, 1.0f);
+			}
+//			else {
+//				this.botTime = -1;
+//			}
+			
 			this.pieces.add(new Piece(x + 1, y + 1, value - 1));
 		}
 		else {
@@ -501,10 +523,10 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	@Override
 	public String name(Gomoku game, int value) {
 		if (value == 1) {
-			return (playerNames[0]);
+			return (this.playerNames[0]);
 		}
 		else {
-			return (playerNames[1]);
+			return (this.playerNames[1]);
 		}
 	}
 	
