@@ -592,25 +592,27 @@ public class Gomoku {
 		int pcount = 0;
 		for (int i = 1; ; i++) {
 			int token = this.getToken(x - (dx * i), y - (dy * i));
-			if (token < 0 || (token != 0 && token != value) ||
-				(token != 0 && this.isInDanger(x - (dx * i), y - (dy * i), value))) {
+			if (token < 0 || (token != 0 && token != value)) {
 				if (!pspaced) {
 					return (false);
 				}
 				break;
 			}
-			if (!pspaced && token == 0) {
-				pspaced = true;
-				prev = pcount;
-				continue;
-			}
 			if (token == 0) {
+				if (!pspaced) {
+					pspaced = true;
+					prev = pcount;
+					continue;
+				}
+				if (prev == pcount) {
+					pspaced = false;
+				}
 				prev = pcount;
 				break;
 			}
 			pcount++;
 		}
-		if (prev == 0) {
+		if (prev != pcount) {
 			pspaced = false;
 		}
 		
@@ -618,20 +620,19 @@ public class Gomoku {
 		int ncount = 0;
 		for (int i = 1; ; i++) {
 			int token = this.getToken(x + (dx * i), y + (dy * i));
-			if (token < 0 || (token != 0 && token != value) ||
-				(token != 0 && this.isInDanger(x + (dx * i), y + (dy * i), value))) {
+			if (token < 0 || (token != 0 && token != value)) {
 				if (!nspaced) {
 					return (false);
 				}
 				break;
 			}
-			if (!nspaced && !pspaced && token == 0) {
-				nspaced = true;
-				next = ncount;
-				continue;
-			}
 			if (token == 0) {
-				next = ncount;
+				if (!nspaced && !pspaced) {
+					nspaced = true;
+					next = ncount;
+					continue;
+				}
+				prev = pcount;
 				break;
 			}
 			ncount++;
