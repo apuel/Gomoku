@@ -5,7 +5,7 @@ import org.lwjgl.opengl.*;
 import org.us._42.laphicet.gomoku.Gomoku;
 import org.us._42.laphicet.gomoku.GameStateReporter;
 import org.us._42.laphicet.gomoku.PlayerController;
-
+import org.us._42.laphicet.gomoku.ai.AIController;
 import org.lwjgl.BufferUtils;
 
 import static org.lwjgl.glfw.Callbacks.*;
@@ -485,6 +485,11 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	
 	@Override
 	public void reportChange(Gomoku game, int x, int y, int value) {
+		PlayerController player = game.getPlayerController(value);
+		if (player instanceof AIController) {
+			((AIController)player).getTimeElapsed();
+		}
+		
 		if (value != 0) {
 			this.pieces.add(new Piece(x + 1, y + 1, value - 1));
 		}

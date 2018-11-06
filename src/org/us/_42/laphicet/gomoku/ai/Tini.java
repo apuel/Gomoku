@@ -15,7 +15,7 @@ import org.us._42.laphicet.gomoku.Gomoku;
 import org.us._42.laphicet.gomoku.Gomoku.AdjacentAlignment;
 import org.us._42.laphicet.gomoku.PlayerController;
 
-public class Tini implements PlayerController {
+public class Tini implements PlayerController, AIController {
 	/**
 	 * Used on placements that capture tokens.
 	 */
@@ -51,11 +51,39 @@ public class Tini implements PlayerController {
 	private int y = -1;
 	private int priority = 0;
 	
-	private int winner = 0;
+	private double elapsed = 0.0;
 	
-	private int nmoves;
 	private Map<Long,Integer> moves = new HashMap<Long,Integer>();
 	private int depth;
+	
+	private static class TreeNode {
+		int value;
+		
+		int x;
+		int y;
+		int priority;
+		
+		private TreeNode[] nodes;
+		
+		private TreeNode(int length) {
+			this.nodes = new TreeNode[length];
+		}
+		
+		@Override
+		public TreeNode clone() {
+			TreeNode result = new TreeNode(this.nodes.length);
+			result.value = this.value;
+			result.x = this.x;
+			result.y = this.y;
+			result.priority = this.priority;
+			for (int i = 0; i < result.nodes.length; i++) {
+				result.nodes[i] = this.nodes[i].clone();
+			}
+			return (result);
+		}
+	}
+	
+	private TreeNode node;
 	
 	/**
 	 * Creates a new instance of the Tini Gomoku AI.
@@ -63,9 +91,15 @@ public class Tini implements PlayerController {
 	 * @param nmoves The number of moves to consider at each step.
 	 * @param depth How many turns to consider before making a decision.
 	 */
-	public Tini(int nmoves, int depth) {
-		this.nmoves = nmoves;
+	public Tini(int moves, int depth) {
 		this.depth = depth;
+		
+		if (moves > 1 && depth > 0) {
+			this.node = new TreeNode(moves);
+		}
+		else {
+			this.node = new TreeNode(0);
+		}
 	}
 	
 	/**
@@ -313,66 +347,70 @@ public class Tini implements PlayerController {
 		}
 	}
 	
-	private Tini[] copies = null;
 	private Tini self = null;
+	private Tini next = null;
 	
 	/**
-	 * Evaluates following turns that the game may play into.
+	 * Generates an n-ary tree with possible outcomes for the next 'depth' amount of turns.
 	 */
-	private void evaluateDepth() {
-		if (this.priority > 0 && this.nmoves > 1 && this.depth > 0) {
-			if (this.copies == null) {
-				this.copies = new Tini[Gomoku.PLAYER_COUNT];
-				for (int i = 0; i < Gomoku.PLAYER_COUNT; i++) {
-					this.copies[i] = new Tini(this.nmoves, this.depth - 1);
-				}
-				this.self = this.copies[this.value - 1];
+	private void generateTree() {
+		if (this.priority <= 0 || this.node.nodes.length <= 1 || this.depth <= 0) {
+			return;
+		}
+		
+		if (this.self == null || this.next == null) {
+			this.self = new Tini(this.node.nodes.length, this.depth - 1);
+			this.next = new Tini(this.node.nodes.length, this.depth - 1);
+		}
+		
+		List<Entry<Long,Integer>> moves = new ArrayList<Entry<Long,Integer>>(this.moves.entrySet());
+		moves.sort(new Comparator<Entry<Long,Integer>>() {
+			@Override
+			public int compare(Entry<Long,Integer> a, Entry<Long,Integer> b) {
+				return (b.getValue().compareTo(a.getValue()));
+			}
+		});
+		
+		for (int i = 0; i < this.node.nodes.length; i++) {
+			if (moves.size() <= i) {
+				this.node.nodes[i] = null;
+				break;
 			}
 			
-			List<Entry<Long,Integer>> moves = new ArrayList<Entry<Long,Integer>>(this.moves.entrySet());
-			moves.sort(new Comparator<Entry<Long,Integer>>() {
-				@Override
-				public int compare(Entry<Long,Integer> a, Entry<Long,Integer> b) {
-					return (b.getValue() - a.getValue());
-				}
-			});
+			Entry<Long,Integer> move = moves.get(i);
+			long token = move.getKey();
+			int x = (int)(token >> 32);
+			int y = (int)(token & 0xFFFFFFFF);
+			int priority = move.getValue();
 			
-			for (Entry<Long,Integer> move : (this.nmoves > moves.size()) ? moves : moves.subList(0, this.nmoves)) {
-				Gomoku game = this.game.clone(null, this.copies);
-				for (int i = 0; i < Gomoku.PLAYER_COUNT; i++) {
-					this.copies[i].gameStart(game, i + 1);
-				}
-				
-				long token = move.getKey();
-				int x = (int)(token >> 32);
-				int y = (int)(token & 0xFFFFFFFF);
-				int priority = move.getValue();
-				
-				self.x = x;
-				self.y = y;
-				self.priority = -1;
-				game.next(); //Make the designated move
-				game.next(); //Branch!
-				
-				//Evaluate results.
-				
-				for (Tini tini : this.copies) {
-					tini.gameEnd(game);
-				}
-				
-				if (self.winner == this.value) {
-					this.x = x;
-					this.y = y;
-					break;
-				}
-				if (priority > this.priority) {
-					this.x = x;
-					this.y = y;
-					this.priority = priority;
-				}
-			}
+			Gomoku game = this.game.clone(null, this.self);
+			this.self.gameStart(game, this.value);
+			this.next.gameStart(game, (this.value % Gomoku.PLAYER_COUNT) + 1);
 			
-			moves.clear();
+			this.self.x = x;
+			this.self.y = y;
+			this.self.priority = -1;
+			game.next(); //Make the designated move
+			game.next(); //Branch!
+			
+			this.node.nodes[i] = next.node.clone();
+			this.node.nodes[i].x = x;
+			this.node.nodes[i].y = y;
+			this.node.nodes[i].priority = priority;
+			
+			this.self.gameEnd(game);
+			this.next.gameEnd(game);
+		}
+		
+		moves.clear();
+	}
+	
+	/**
+	 * Evaluates the previously generated n-ary tree and decides on a move to make.
+	 */
+	private void evaluateTree() {
+		if (this.priority <= 0 || this.node.nodes.length <= 1 || this.depth <= 0) {
+			return;
 		}
 	}
 	
@@ -414,7 +452,6 @@ public class Tini implements PlayerController {
 	@Override
 	public void informWinner(Gomoku game, int value) {
 		if (this.game == game) {
-			this.winner = value;
 		}
 	}
 	
@@ -424,9 +461,12 @@ public class Tini implements PlayerController {
 			return (false);
 		}
 		
+		long start = System.nanoTime();
 		this.evaluateMoves();
-		this.evaluateDepth();
+		this.generateTree();
+		this.evaluateTree();
 		game.submitMove(this.x, this.y, key);
+		this.elapsed = (double)(System.nanoTime() - start) / 1000000000.0;
 		
 		this.x = -1;
 		this.y = -1;
@@ -443,6 +483,7 @@ public class Tini implements PlayerController {
 		
 		this.game = game;
 		this.value = value;
+		this.node.value = value;
 		for (int y = 0; y < Gomoku.BOARD_LENGTH; y++) {
 			for (int x = 0; x < Gomoku.BOARD_LENGTH; x++) {
 				if (game.getToken(x, y) != 0) {
@@ -450,8 +491,6 @@ public class Tini implements PlayerController {
 				}
 			}
 		}
-		
-		this.winner = 0;
 	}
 	
 	@Override
@@ -465,5 +504,10 @@ public class Tini implements PlayerController {
 			this.priority = 0;
 			this.moves.clear();
 		}
+	}
+	
+	@Override
+	public double getTimeElapsed() {
+		return (this.elapsed);
 	}
 }
