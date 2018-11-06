@@ -56,6 +56,7 @@ public class Gomoku {
 	
 	private int x = -1;
 	private int y = -1;
+	private boolean submitted = false;
 	
 	private Random keygen = new SecureRandom();
 	private long key = 0;
@@ -128,6 +129,10 @@ public class Gomoku {
 			result.captures[i] = this.captures[i];
 			result.placed[i] = this.placed[i];
 		}
+		
+		result.x = this.x;
+		result.y = this.y;
+		result.submitted = this.submitted;
 		
 		result.logs.addAll(this.logs);
 		result.turn = this.turn;
@@ -219,6 +224,7 @@ public class Gomoku {
 		if (this.key == key) {
 			this.x = x;
 			this.y = y;
+			this.submitted = true;
 		}
 	}
 	
@@ -667,26 +673,32 @@ public class Gomoku {
 	 * @param value The value of the token.
 	 * @return Whether or not the move is valid.
 	 */
-	private boolean validateMove(int x, int y, int value) {
+	private boolean validateMove(int value) {
 		PlayerController player = this.players[value - 1];
-		int token = getToken(x, y);
+		
+		if (!(this.submitted)) {
+			player.report(this, "Nothing was submitted!");
+			return (false);
+		}
+		
+		int token = getToken(this.x, this.y);
 		
 		if (token < 0) {
-			player.report(this, String.format("Coordinates (%d, %d) not in bounds!", x, y));
+			player.report(this, String.format("Coordinates (%d, %d) not in bounds!", this.x, this.y));
 			return (false);
 		}
 		
 		if (token != 0) {
-			player.report(this, String.format("There is already a token at (%d, %d)!", x, y));
+			player.report(this, String.format("There is already a token at (%d, %d)!", this.x, this.y));
 			return (false);
 		}
 		
-		if (this.isCaptured(x, y, value)) {
+		if (this.isCaptured(this.x, y, value)) {
 			player.report(this, "You may not place a token into a capture!");
 			return (false);
 		}
 		
-		if (this.createsDoubleThree(x, y, value) && (this.countCaptures(x, y, value) == 0)) {
+		if (this.createsDoubleThree(this.x, this.y, value) && (this.countCaptures(this.x, this.y, value) == 0)) {
 			player.report(this, "You may not play a token that would cause a double three!");
 			return (false);
 		}
@@ -748,11 +760,11 @@ public class Gomoku {
 			PlayerController player = this.players[this.turn % PLAYER_COUNT];
 			int value = (this.turn % PLAYER_COUNT) + 1;
 			
-			this.x = -1; this.y = -1; this.key = this.keygen.nextLong();
+			this.x = -1; this.y = -1; this.key = this.keygen.nextLong(); this.submitted = false;
 			if (!(player.getMove(this, value, this.key))) {
 				return;
 			}
-			if (!(this.validateMove(this.x, this.y, value))) {
+			if (!(this.validateMove(value))) {
 				return;
 			}
 			

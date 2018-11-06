@@ -2,6 +2,7 @@ package org.us._42.laphicet.gomoku.ai;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,11 +43,11 @@ public class Tini implements PlayerController, AIController {
 	private static final int FUTILE_PRIORITY = 1000;
 	
 	private static final PlayerController NULL_CONTROLLER = new PlayerController() {
-		@Override public String name(Gomoku game, int value) { return ("null"); }
+		@Override public String name(Gomoku game, int value) { return ("(null)"); }
 		@Override public void report(Gomoku game, String message) { }
 		@Override public void informChange(Gomoku game, int x, int y, int value) { }
 		@Override public void informWinner(Gomoku game, int value) { }
-		@Override public boolean getMove(Gomoku game, int value, long key) { return false; }
+		@Override public boolean getMove(Gomoku game, int value, long key) { return (false); }
 		@Override public void gameStart(Gomoku game, int value) { }
 		@Override public void gameEnd(Gomoku game) { }
 	};
@@ -67,11 +68,11 @@ public class Tini implements PlayerController, AIController {
 	private int depth;
 	
 	private static class TreeNode {
-		int value;
+		private int value;
+		private int x;
+		private int y;
 		
-		int x;
-		int y;
-		int priority;
+		private int winner = 0;
 		
 		private TreeNode[] nodes;
 		
@@ -85,9 +86,16 @@ public class Tini implements PlayerController, AIController {
 			result.value = this.value;
 			result.x = this.x;
 			result.y = this.y;
-			result.priority = this.priority;
+			
+			result.winner = this.winner;
+			
 			for (int i = 0; i < result.nodes.length; i++) {
-				result.nodes[i] = this.nodes[i].clone();
+				if (this.nodes[i] != null) {
+					result.nodes[i] = this.nodes[i].clone();
+				}
+				else {
+					result.nodes[i] = null;
+				}
 			}
 			return (result);
 		}
@@ -387,6 +395,7 @@ public class Tini implements PlayerController, AIController {
 		}
 		
 		List<Entry<Long,Integer>> moves = new ArrayList<Entry<Long,Integer>>(this.moves.entrySet());
+		Collections.shuffle(moves);
 		moves.sort(new Comparator<Entry<Long,Integer>>() {
 			@Override
 			public int compare(Entry<Long,Integer> a, Entry<Long,Integer> b) {
@@ -400,26 +409,17 @@ public class Tini implements PlayerController, AIController {
 				break;
 			}
 			
-			Entry<Long,Integer> move = moves.get(i);
-			long token = move.getKey();
-			int x = (int)(token >> 32);
-			int y = (int)(token & 0xFFFFFFFF);
-			int priority = move.getValue();
-			
 			Gomoku game = this.game.clone(null, this.controllers);
 			this.self.gameStart(game, this.value);
 			this.next.gameStart(game, (this.value % Gomoku.PLAYER_COUNT) + 1);
 			
-			this.self.x = x;
-			this.self.y = y;
+			long token = moves.get(i).getKey();
+			this.self.x = (int)(token >> 32);
+			this.self.y = (int)(token & 0xFFFFFFFF);
 			this.self.priority = -1;
 			game.next(); //Make the designated move
 			game.next(); //Branch!
-			
 			this.node.nodes[i] = next.node.clone();
-			this.node.nodes[i].x = x;
-			this.node.nodes[i].y = y;
-			this.node.nodes[i].priority = priority;
 			
 			this.self.gameEnd(game);
 			this.next.gameEnd(game);
@@ -429,11 +429,30 @@ public class Tini implements PlayerController, AIController {
 	}
 	
 	/**
+	 * Evaluates a tree of possible moves.
+	 * 
+	 * @param node The root node of the tree in question.
+	 */
+	private void evaluateTree(TreeNode node) {
+		if (node == null) {
+			return;
+		}
+		
+		for (TreeNode n : node.nodes) {
+			this.evaluateTree(n);
+		}
+	}
+	
+	/**
 	 * Evaluates the previously generated n-ary tree and decides on a move to make.
 	 */
 	private void evaluateTree() {
 		if (this.priority <= 0 || this.node.nodes.length <= 1 || this.depth <= 0) {
 			return;
+		}
+		
+		for (int i = 0; i < this.node.nodes.length; i++) {
+			this.evaluateTree(this.node.nodes[i]);
 		}
 	}
 	
@@ -444,7 +463,7 @@ public class Tini implements PlayerController, AIController {
 	
 	@Override
 	public void report(Gomoku game, String message) {
-		throw new RuntimeException(this.name(null, 0) + " >> " + message);
+		throw new RuntimeException("[" + this.name(null, 0) + "] Received report: " + message);
 	}
 	
 	@Override
@@ -468,6 +487,10 @@ public class Tini implements PlayerController, AIController {
 						break;
 					}
 				}
+				
+				this.node.value = value;
+				this.node.x = x;
+				this.node.y = y;
 			}
 		}
 	}
@@ -475,6 +498,10 @@ public class Tini implements PlayerController, AIController {
 	@Override
 	public void informWinner(Gomoku game, int value) {
 		if (this.game == game) {
+			for (int i = 0; i < this.node.nodes.length; i++) {
+				this.node.nodes[i] = null;
+			}
+			this.node.winner = value;
 		}
 	}
 	
@@ -506,7 +533,6 @@ public class Tini implements PlayerController, AIController {
 		
 		this.game = game;
 		this.value = value;
-		this.node.value = value;
 		for (int y = 0; y < Gomoku.BOARD_LENGTH; y++) {
 			for (int x = 0; x < Gomoku.BOARD_LENGTH; x++) {
 				if (game.getToken(x, y) != 0) {
