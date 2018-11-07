@@ -477,7 +477,7 @@ public class Gomoku {
 		int captures = 0;
 		for (Alignment alignment : Alignment.values()) {
 			captures += this.checkCapture(x, y, value, alignment.dx, alignment.dy);
-			captures += this.checkCapture(x, y, value, -alignment.dx, -alignment.dy);
+			captures += this.checkCapture(x, y, value, -(alignment.dx), -(alignment.dy));
 		}
 		return (captures);
 	}
