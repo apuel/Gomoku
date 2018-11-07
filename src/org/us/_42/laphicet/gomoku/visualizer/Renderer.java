@@ -1,14 +1,10 @@
 package org.us._42.laphicet.gomoku.visualizer;
 
-import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwShowWindow;
-import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
 import static org.lwjgl.opengl.GL11.GL_BLEND;
 import static org.lwjgl.opengl.GL11.GL_LINEAR;
 import static org.lwjgl.opengl.GL11.GL_LINES;
-import static org.lwjgl.opengl.GL11.GL_MODELVIEW;
 import static org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA;
-import static org.lwjgl.opengl.GL11.GL_PROJECTION;
 import static org.lwjgl.opengl.GL11.GL_QUADS;
 import static org.lwjgl.opengl.GL11.GL_RGBA;
 import static org.lwjgl.opengl.GL11.GL_RGBA8;
@@ -25,9 +21,6 @@ import static org.lwjgl.opengl.GL11.glDisable;
 import static org.lwjgl.opengl.GL11.glEnable;
 import static org.lwjgl.opengl.GL11.glEnd;
 import static org.lwjgl.opengl.GL11.glGenTextures;
-import static org.lwjgl.opengl.GL11.glLoadIdentity;
-import static org.lwjgl.opengl.GL11.glMatrixMode;
-import static org.lwjgl.opengl.GL11.glOrtho;
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glTexCoord2f;
 import static org.lwjgl.opengl.GL11.glTexImage2D;
@@ -43,7 +36,6 @@ import java.nio.ByteBuffer;
 import javax.imageio.ImageIO;
 
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL;
 
 /**
  * Renderer - Shared functions being used by other classes 
@@ -146,10 +138,10 @@ public final class Renderer {
     public static void drawLine(float x1, float y1, float x2, float y2, float size) {
     	glColor3f(0.0f, 0.0f, 0.0f);
     	glBegin(GL_LINES);
-    	{
+    	{ 
     		for (float i = -size; i < size; i += 0.01f) {
-    			glVertex2f(x1 + i, y1 + i);
-    			glVertex2f(x2 + i, y2 + i);
+    			glVertex2f((y2 - y1) == 0 ? x1 - size : x1 + i, (x2 - x1) == 0 ? y1 - size : y1 + i);
+    			glVertex2f((y2 - y1) == 0 ? x2 + size : x2 + i, (x2 - x1) == 0 ? y2 + size : y2 + i);
     		}
     	}
     	glEnd();
