@@ -161,14 +161,14 @@ public class Visualizer implements PlayerController, GameStateReporter {
      * Renders the report onto the visualizer
      */
 	private void renderReports() {
-		int x = 60;
-		int y = 60;
+		int x = 65;
+		int y = 65;
 		Entry<Float[],String> msg = null;
 		for (int i = 0; i < REPORT_SIZE; i++) {
 			if (report.size() > i) {
 				msg = this.report.get(report.size() - 1 - i);
-				this.textutil.drawString(msg.getValue(), x, y, 1, msg.getKey());
-				y = y + 14;
+				this.textutil.drawString(msg.getValue(), x, y, 0.8f, msg.getKey());
+				y = y + 13;
 			}
 		}
 	}
@@ -207,16 +207,16 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	 * @param captureP2 Total captures made by player 2
 	 */
 	private void renderStats(int turn, int tokenP1, int tokenP2, int captureP1, int captureP2) {
-		textutil.drawString("TURN", (int)(515 -  (2f * (textutil.width * 3/textutil.SCALE))), 1170, 3, new Float[]{0.0f, 0.0f, 0.0f});
-		textutil.drawString(playerNames[0], 70, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
-		textutil.drawStringBackwards(playerNames[1], 950, 1220, 2, new Float[]{0.0f, 0.0f, 0.0f});
+		textutil.drawString("TURN", (int)(515 -  (2f * (textutil.width * 3/textutil.SCALE))), 1170, 3, new Float[]{0.0f, 1.0f, 0.0f});
+		textutil.drawString(playerNames[0], 72, 1220, 2, new Float[]{0.0f, 1.0f, 0.0f});
+		textutil.drawStringBackwards(playerNames[1], 945, 1220, 2, new Float[]{0.0f, 1.0f, 0.0f});
 		String gameTurn = Integer.toString(turn / 2);
 		textutil.drawString(gameTurn, (int)(515 -  ((gameTurn.length() / 2f) * (textutil.width * 3/textutil.SCALE))), 1130, 3, new Float[]{1.0f, 1.0f, 1.0f});
-		textutil.drawString("Tokens Played: " + tokenP1, 70, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-		textutil.drawStringBackwards("Tokens Played: " + tokenP2, 950, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-		textutil.drawString("Captures Made: " + captureP1, 70, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-		textutil.drawStringBackwards("Captures Made: " + captureP2, 950, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-		Renderer.renderTexture(this.playerPiece[turn % 2], 500, 1220, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
+		textutil.drawString("Tokens Played: " + tokenP1, 72, 1180, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawStringBackwards("Tokens Played: " + tokenP2, 945, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawString("Captures Made: " + captureP1, 72, 1150, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawStringBackwards("Captures Made: " + captureP2, 945, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+		Renderer.renderTexture(this.playerPiece[turn % 2], 500, 1210, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
 //		if ((turn % 2) == 1 && this.botTime != -1) {
 //			textutil.drawString("Time Elapsed: " + this.botTime, 70, 1130, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 //		}
