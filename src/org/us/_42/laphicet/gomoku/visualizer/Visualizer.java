@@ -212,9 +212,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		textutil.drawStringBackwards(playerNames[1], 945, 1220, 2, new Float[]{0.0f, 1.0f, 0.0f});
 		String gameTurn = Integer.toString(turn / 2);
 		textutil.drawString(gameTurn, (int)(515 -  ((gameTurn.length() / 2f) * (textutil.width * 3/textutil.SCALE))), 1130, 3, new Float[]{1.0f, 1.0f, 1.0f});
-		textutil.drawString("Tokens Played: " + tokenP1, 72, 1180, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawString("Tokens Played: " + tokenP1, 72, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 		textutil.drawStringBackwards("Tokens Played: " + tokenP2, 945, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-		textutil.drawString("Captures Made: " + captureP1, 72, 1150, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawString("Captures Made: " + captureP1, 72, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 		textutil.drawStringBackwards("Captures Made: " + captureP2, 945, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 		Renderer.renderTexture(this.playerPiece[turn % 2], 500, 1210, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
 //		if ((turn % 2) == 1 && this.botTime != -1) {
