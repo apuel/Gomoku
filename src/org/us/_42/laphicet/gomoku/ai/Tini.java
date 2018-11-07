@@ -13,7 +13,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.us._42.laphicet.gomoku.Gomoku;
-import org.us._42.laphicet.gomoku.Gomoku.AdjacentAlignment;
+import org.us._42.laphicet.gomoku.Gomoku.Alignment;
 import org.us._42.laphicet.gomoku.PlayerController;
 
 public class Tini implements PlayerController, AIController {
@@ -178,7 +178,7 @@ public class Tini implements PlayerController, AIController {
 	 * @param alignment The alignment on the adjacent tokens.
 	 * @return The number of tokens adjacent of a unplaced token, including itself.
 	 */
-	private int getUpdatedAdjacents(int x, int y, int value, AdjacentAlignment alignment) {
+	private int getUpdatedAdjacents(int x, int y, int value, Alignment alignment) {
 		int prev = 0;
 		int next = 0;
 		
@@ -201,7 +201,7 @@ public class Tini implements PlayerController, AIController {
 	 * @param alignment The alignment on the adjacent tokens.
 	 * @return The number of adjacent tokens that could fit into this alignment at this placement.
 	 */
-	private int getAdjacentCapacity(int x, int y, int value, AdjacentAlignment alignment) {
+	private int getAdjacentCapacity(int x, int y, int value, Alignment alignment) {
 		int dx = alignment.dx;
 		int dy = alignment.dy;
 		
@@ -231,7 +231,7 @@ public class Tini implements PlayerController, AIController {
 			return;
 		}
 		
-		for (AdjacentAlignment alignment : AdjacentAlignment.values()) {
+		for (Alignment alignment : Alignment.values()) {
 			int dx = alignment.dx;
 			int dy = alignment.dy;
 			
@@ -244,7 +244,7 @@ public class Tini implements PlayerController, AIController {
 						p += (captures * LAST_DITCH_PRIORITY);
 					}
 					
-					for (AdjacentAlignment a : AdjacentAlignment.values()) {
+					for (Alignment a : Alignment.values()) {
 						int adjacent = this.getUpdatedAdjacents(xi, yi, value, a);
 						int capacity = this.getAdjacentCapacity(xi, yi, value, alignment);
 						
@@ -269,7 +269,7 @@ public class Tini implements PlayerController, AIController {
 	 * @param alignment The alignment in which a set of tokens are arranged.
 	 * @param priority The base priority for the placement.
 	 */
-	private void surroundToken(int x, int y, int value, AdjacentAlignment alignment, int priority) {
+	private void surroundToken(int x, int y, int value, Alignment alignment, int priority) {
 		int dx = alignment.dx;
 		int dy = alignment.dy;
 		int capacity = this.getAdjacentCapacity(x, y, value, alignment);
@@ -312,7 +312,7 @@ public class Tini implements PlayerController, AIController {
 	 * @param value The value of the token in question.
 	 */
 	private void evaluateToken(int x, int y, int value) {
-		for (AdjacentAlignment alignment : AdjacentAlignment.values()) {
+		for (Alignment alignment : Alignment.values()) {
 			int adjacent = this.game.getAdjacentTokenCount(x, y, alignment);
 			
 			if (value != this.value) {
@@ -481,7 +481,7 @@ public class Tini implements PlayerController, AIController {
 			this.tokens.add(token);
 			
 			if (value != this.value) {
-				for (AdjacentAlignment alignment : AdjacentAlignment.values()) {
+				for (Alignment alignment : Alignment.values()) {
 					if (this.game.getAdjacentTokenCount(x, y, alignment) >= Gomoku.ADJACENT_TO_WIN) {
 						this.attemptCapture(x, y, value, FUTILE_PRIORITY);
 						break;
