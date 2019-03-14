@@ -118,7 +118,7 @@ public class Gomoku {
 			for (int x = 0; x < BOARD_LENGTH; x++) {
 				if (this.board[y][x] != null) {
 					result.board[y][x] = this.board[y][x].clone();
-					if (this.check5 == this.board[y][x]) {
+					if ((this.check5 != null) && (this.check5 == this.board[y][x])) {
 						result.check5 = result.board[y][x];
 					}
 				}
