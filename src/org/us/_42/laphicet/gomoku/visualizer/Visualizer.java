@@ -33,12 +33,9 @@ import java.util.Set;
 public class Visualizer implements PlayerController, GameStateReporter {
 	private static final int BOARD_OFFSET = 300;
 	private static final byte BOARD_SIZE = Gomoku.BOARD_LENGTH;
-	private static final byte BOARD_SPACE = 50;
+	public static final byte BOARD_SPACE = 50;
 	private static final int BOARD_WIDTH = (BOARD_SIZE + 1) * BOARD_SPACE;
 	private static final int PIECE_OFFSET = 150;
-	private static final int STATBOX_OFFSET = 100;
-	private static final int MIDDLE_OFFSET = 250;
-	private static final int REPORTBOX_OFFSET = 50;
 	private static final int TEXTURE_OFFSET = (128 / 5);
 	private static final int BG_OFFSET_X = (BOARD_WIDTH - (BOARD_SPACE * 2)) / 2;
 	private static final int BG_OFFSET_Y = ((BOARD_WIDTH + BOARD_OFFSET) - (BOARD_SPACE * 2)) / 2;
@@ -57,7 +54,9 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	
 	private int currentPlayerPickingChar = 0;
 	private boolean[] availableChar = new boolean[8];
-	private static final String[] PIECENAME = new String[] {"Victini", "Claydol", "Slowpoke", "Cyndaquil", "Flareon", "Porygon2", "Paras", "Charmander"};
+	private static final String[] PIECENAME = new String[] {
+			"Victini", "Claydol", "Slowpoke", "Cyndaquil", 
+			"Flareon", "Porygon2", "Paras", "Charmander" };
 	
 	private boolean toggleDebug;
 	private boolean debugPressed;
@@ -132,20 +131,10 @@ public class Visualizer implements PlayerController, GameStateReporter {
      * Renders a blank board on the visualizer window.
      */
     private void renderBoard() {
-    	Renderer.drawLine(BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET, BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET, 1.4f);
-    	Renderer.drawLine(BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET , BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET, 1.4f);
-    	Renderer.drawLine(BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET, 1.4f);
-    	Renderer.drawLine(BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + STATBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET, 1.4f);
-		
     	for (float i = 1; i <= BOARD_SIZE; i++) {
     		Renderer.drawLine(BOARD_SPACE, (i * BOARD_SPACE) + PIECE_OFFSET, BOARD_SIZE * BOARD_SPACE, (i * BOARD_SPACE) + PIECE_OFFSET, 1.4f);
     		Renderer.drawLine(i * BOARD_SPACE, BOARD_SPACE + PIECE_OFFSET, i * BOARD_SPACE, (BOARD_SIZE * BOARD_SPACE) + PIECE_OFFSET, 1.4f);
     	}
-    	
-    	Renderer.drawLine(BOARD_SPACE, MIDDLE_OFFSET, BOARD_WIDTH - BOARD_SPACE, MIDDLE_OFFSET, 1.4f);
-    	Renderer.drawLine(BOARD_SPACE, REPORTBOX_OFFSET , BOARD_SPACE, BOARD_WIDTH + MIDDLE_OFFSET, 1.4f);
-    	Renderer.drawLine(BOARD_SPACE, REPORTBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, REPORTBOX_OFFSET, 1.4f);
-    	Renderer.drawLine(BOARD_WIDTH - BOARD_SPACE, REPORTBOX_OFFSET , BOARD_WIDTH - BOARD_SPACE, MIDDLE_OFFSET, 1.4f);
     }
     
     /**
@@ -161,8 +150,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
      * Renders the report onto the visualizer
      */
 	private void renderReports() {
-		int x = 65;
-		int y = 65;
+		int x = 25;
+		int y = 18;
 		Entry<Float[],String> msg = null;
 		for (int i = 0; i < REPORT_SIZE; i++) {
 			if (report.size() > i) {
@@ -207,16 +196,16 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	 * @param captureP2 Total captures made by player 2
 	 */
 	private void renderStats(int turn, int tokenP1, int tokenP2, int captureP1, int captureP2) {
-		textutil.drawString("TURN", (int)(515 -  (2f * (textutil.width * 3/textutil.SCALE))), 1170, 3, new Float[]{0.0f, 1.0f, 0.0f});
-		textutil.drawString(playerNames[0], 72, 1220, 2, new Float[]{0.0f, 1.0f, 0.0f});
-		textutil.drawStringBackwards(playerNames[1], 945, 1220, 2, new Float[]{0.0f, 1.0f, 0.0f});
+		textutil.drawString("TURN", (int)(515 -  (2f * (textutil.width * 3/textutil.SCALE))), 1220, 3, new Float[]{0.0f, 1.0f, 0.0f});
+		textutil.drawString(playerNames[0], 25, 1270, 2.5f, new Float[]{0.0f, 1.0f, 0.0f});
+		textutil.drawStringBackwards(playerNames[1], 995, 1270, 2.1f, new Float[]{0.0f, 1.0f, 0.0f});
 		String gameTurn = Integer.toString(turn / 2);
-		textutil.drawString(gameTurn, (int)(515 -  ((gameTurn.length() / 2f) * (textutil.width * 3/textutil.SCALE))), 1130, 3, new Float[]{1.0f, 1.0f, 1.0f});
-		textutil.drawString("Tokens Played: " + tokenP1, 72, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-		textutil.drawStringBackwards("Tokens Played: " + tokenP2, 945, 1190, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-		textutil.drawString("Captures Made: " + captureP1, 72, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-		textutil.drawStringBackwards("Captures Made: " + captureP2, 945, 1160, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
-		Renderer.renderTexture(this.playerPiece[turn % 2], 500, 1210, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
+		textutil.drawString(gameTurn, (int)(515 -  ((gameTurn.length() / 2f) * (textutil.width * 3/textutil.SCALE))), 1180, 3, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawString("Tokens Played: " + tokenP1, 25, 1230, 1.6f, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawStringBackwards("Tokens Played: " + tokenP2, 995, 1230, 1.6f, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawString("Captures Made: " + captureP1, 25, 1200, 1.6f, new Float[]{1.0f, 1.0f, 1.0f});
+		textutil.drawStringBackwards("Captures Made: " + captureP2, 995, 1200, 1.6f, new Float[]{1.0f, 1.0f, 1.0f});
+		Renderer.renderTexture(this.playerPiece[turn % 2], 500, 1263, TEXTURE_OFFSET + 5, TEXTURE_OFFSET + 5);
 //		if ((turn % 2) == 1 && this.botTime != -1) {
 //			textutil.drawString("Time Elapsed: " + this.botTime, 70, 1130, 1.5f, new Float[]{1.0f, 1.0f, 1.0f});
 //		}
@@ -370,7 +359,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private void updateBoard(Gomoku game) {
 		glfwMakeContextCurrent(window);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		Renderer.renderTexture(this.backgroundTexture, BG_OFFSET_X + BOARD_SPACE, BG_OFFSET_Y + BOARD_SPACE, BG_OFFSET_X, BG_OFFSET_Y);
+		Renderer.renderTexture(this.backgroundTexture, BG_OFFSET_X + BOARD_SPACE, BG_OFFSET_Y + BOARD_SPACE, BG_OFFSET_X + BOARD_SPACE, BG_OFFSET_Y + BOARD_SPACE);
 		this.renderBoard();
 		this.renderPieces();
 		this.renderReports();
