@@ -151,13 +151,22 @@ public class Gomoku {
 	 * Gets a player by their token value.
 	 * 
 	 * @param value The player's token value.
-	 * @return The number of currently placed tokens.
+	 * @return The PlayerController.
 	 */
 	public PlayerController getPlayerController(int value) {
 		if (value > 0 && value <= PLAYER_COUNT) {
 			return (this.players[value - 1]);
 		}
 		return (null);
+	}
+	
+	/**
+	 * Gets the winning PlayerController.
+	 * 
+	 * @return The winning player's token value.
+	 */
+	public int getWinner() {
+		return (this.winner);
 	}
 	
 	/**
@@ -588,7 +597,7 @@ public class Gomoku {
 		int pcount = 0;
 		for (int i = 1; ; i++) {
 			int token = this.getToken(x - (dx * i), y - (dy * i));
-			if (token < 0 || (token != 0 && token != value)) {
+			if ((token < 0) || ((token != 0) && (token != value)) || this.isCaptured(x + (dx * i), y + (dy * i), value)) {
 				if (!pspaced) {
 					return (false);
 				}
@@ -616,7 +625,7 @@ public class Gomoku {
 		int ncount = 0;
 		for (int i = 1; ; i++) {
 			int token = this.getToken(x + (dx * i), y + (dy * i));
-			if (token < 0 || (token != 0 && token != value)) {
+			if ((token < 0) || ((token != 0) && (token != value)) || this.isCaptured(x + (dx * i), y + (dy * i), value)) {
 				if (!nspaced) {
 					return (false);
 				}
@@ -690,7 +699,7 @@ public class Gomoku {
 			return (false);
 		}
 		
-		if (this.isCaptured(this.x, y, value)) {
+		if (this.isCaptured(this.x, this.y, value)) {
 			player.report(this, "You may not place a token into a capture!");
 			return (false);
 		}
@@ -787,10 +796,6 @@ public class Gomoku {
 				this.checkAdjacent(this.x, this.y, value);
 			}
 			
-			if (this.winner == 0) {
-				this.turn++;
-			}
-			
 			if (this.winner != 0) {
 				for (PlayerController p : this.set) {
 					p.informWinner(this, this.winner);
@@ -801,6 +806,10 @@ public class Gomoku {
 				this.reporter.logTurn(this, this.logs);
 			}
 			this.logs.clear();
+			
+			if (this.winner == 0) {
+				this.turn++;
+			}
 		}
 	}
 	
@@ -893,7 +902,6 @@ public class Gomoku {
 				}
 				this.players[i] = players[i];
 				this.set.add(players[i]);
-				players[i].gameStart(this, i + 1);
 			}
 		}
 	}
