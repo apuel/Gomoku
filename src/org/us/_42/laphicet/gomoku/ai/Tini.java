@@ -206,12 +206,12 @@ public class Tini implements PlayerController, AIController {
 		int dy = alignment.dy;
 		
 		int prev = 0;
-		for (int xi = x - dx, yi = y - dy; this.isFree(xi, yi, value) || this.game.getToken(xi, yi) == value; xi -= dx, yi -= dy) {
+		for (int xi = x - dx, yi = y - dy; this.isFree(xi, yi, value) || (this.game.getToken(xi, yi) == value); xi -= dx, yi -= dy) {
 			prev++;
 		}
 		
 		int next = 0;
-		for (int xi = x + dx, yi = y + dy; this.isFree(xi, yi, value) || this.game.getToken(xi, yi) == value; xi += dx, yi += dy) {
+		for (int xi = x + dx, yi = y + dy; this.isFree(xi, yi, value) || (this.game.getToken(xi, yi) == value); xi += dx, yi += dy) {
 			next++;
 		}
 		
@@ -282,17 +282,17 @@ public class Tini implements PlayerController, AIController {
 						int p = priority + (this.game.countCaptures(xi, yi, this.value) * CAPTURE_PRIORITY);
 						int adjacent = this.getUpdatedAdjacents(xi, yi, value, alignment);
 						
-						if (adjacent - 1 - this.game.getAdjacentTokenCount(x, y, alignment) >= Gomoku.ADJACENT_TO_WIN) {
+						if (((adjacent - 1) - this.game.getAdjacentTokenCount(x, y, alignment)) >= Gomoku.ADJACENT_TO_WIN) {
 							break;
 						}
 						
-						if (adjacent >= (Gomoku.ADJACENT_TO_WIN - 2) && capacity >= Gomoku.ADJACENT_TO_WIN) {
+						if ((adjacent >= (Gomoku.ADJACENT_TO_WIN - 2)) && (capacity >= Gomoku.ADJACENT_TO_WIN)) {
 							this.evaluate(xi, yi, p + (adjacent * LAST_DITCH_PRIORITY));
 						}
-						else if (value == this.value && this.game.isInDanger(x, y, value)) {
+						else if ((value == this.value) && this.game.isInDanger(x, y, value)) {
 							this.evaluate(xi, yi, p + (adjacent * DEFENSE_PRIORITY));
 						}
-						else {
+						else if (((value == this.value) && (capacity >= Gomoku.ADJACENT_TO_WIN)) || (value != this.value)) {
 							this.evaluate(xi, yi, p + (adjacent * ADJACENT_PRIORITY));
 						}
 					}
