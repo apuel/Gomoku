@@ -171,7 +171,7 @@ public class Gomoku {
 	}
 	
 	/**
-	 * Gets the winning PlayerController.
+	 * Gets the winning token value.
 	 * 
 	 * @return The winning player's token value.
 	 */
