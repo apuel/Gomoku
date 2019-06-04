@@ -38,11 +38,11 @@ public class Gomoku {
 		
 		@Override
 		public Token clone() {
-			Token result = new Token(this.value);
+			Token token = new Token(this.value);
 			for (Alignment alignment : Alignment.values()) {
-				result.adjacent[alignment.ordinal()] = this.adjacent[alignment.ordinal()];
+				token.adjacent[alignment.ordinal()] = this.adjacent[alignment.ordinal()];
 			}
-			return (result);
+			return (token);
 		}
 	}
 	
@@ -105,6 +105,40 @@ public class Gomoku {
 	}
 	
 	/**
+	 * Duplicates another Gomoku instance, overwriting this instance.
+	 * 
+	 * @param gomoku The instance to duplicate.
+	 */
+	public void cloneOf(Gomoku gomoku) {
+		for (int y = 0; y < BOARD_LENGTH; y++) {
+			for (int x = 0; x < BOARD_LENGTH; x++) {
+				this.board[y][x] = null;
+				if (gomoku.board[y][x] != null) {
+					this.board[y][x] = gomoku.board[y][x].clone();
+					if ((gomoku.check5 != null) && (gomoku.check5 == gomoku.board[y][x])) {
+						this.check5 = this.board[y][x];
+					}
+				}
+			}
+		}
+		
+		for (int i = 0; i < PLAYER_COUNT; i++) {
+			this.captures[i] = gomoku.captures[i];
+			this.placed[i] = gomoku.placed[i];
+		}
+		
+		this.x = gomoku.x;
+		this.y = gomoku.y;
+		this.submitted = gomoku.submitted;
+		
+		this.logs.addAll(gomoku.logs);
+		this.turn = gomoku.turn;
+		this.winner = gomoku.winner;
+		this.started = gomoku.started;
+		this.abort = gomoku.abort;
+	}
+	
+	/**
 	 * See {@link Gomoku#clone()}.
 	 * Allows specification of a new {@link GameStateReporter} and {@link PlayerController}s.
 	 * 
@@ -113,33 +147,9 @@ public class Gomoku {
 	 * @return A clone of this instance.
 	 */
 	public Gomoku clone(GameStateReporter reporter, PlayerController... players) {
-		Gomoku result = new Gomoku(reporter, players);
-		for (int y = 0; y < BOARD_LENGTH; y++) {
-			for (int x = 0; x < BOARD_LENGTH; x++) {
-				if (this.board[y][x] != null) {
-					result.board[y][x] = this.board[y][x].clone();
-					if ((this.check5 != null) && (this.check5 == this.board[y][x])) {
-						result.check5 = result.board[y][x];
-					}
-				}
-			}
-		}
-		
-		for (int i = 0; i < PLAYER_COUNT; i++) {
-			result.captures[i] = this.captures[i];
-			result.placed[i] = this.placed[i];
-		}
-		
-		result.x = this.x;
-		result.y = this.y;
-		result.submitted = this.submitted;
-		
-		result.logs.addAll(this.logs);
-		result.turn = this.turn;
-		result.winner = this.winner;
-		result.started = this.started;
-		result.abort = this.abort;
-		return (result);
+		Gomoku gomoku = new Gomoku(reporter, players);
+		gomoku.cloneOf(this);
+		return (gomoku);
 	}
 	
 	@Override
