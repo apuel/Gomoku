@@ -597,7 +597,7 @@ public class Gomoku {
 		int pcount = 0;
 		for (int i = 1; ; i++) {
 			int token = this.getToken(x - (dx * i), y - (dy * i));
-			if ((token < 0) || ((token != 0) && (token != value)) || this.isCaptured(x + (dx * i), y + (dy * i), value)) {
+			if (((token != 0) && (token != value)) || ((token == 0) && this.isCaptured(x + (dx * i), y + (dy * i), value))) {
 				if (!pspaced) {
 					return (false);
 				}
@@ -625,7 +625,7 @@ public class Gomoku {
 		int ncount = 0;
 		for (int i = 1; ; i++) {
 			int token = this.getToken(x + (dx * i), y + (dy * i));
-			if ((token < 0) || ((token != 0) && (token != value)) || this.isCaptured(x + (dx * i), y + (dy * i), value)) {
+			if (((token != 0) && (token != value)) || ((token == 0) && this.isCaptured(x + (dx * i), y + (dy * i), value))) {
 				if (!nspaced) {
 					return (false);
 				}
