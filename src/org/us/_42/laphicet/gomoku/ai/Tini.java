@@ -68,12 +68,7 @@ public class Tini implements PlayerController, AIController {
 	private int depth;
 	
 	private static class TreeNode {
-		private int value;
-		private int x;
-		private int y;
-		
 		private Gomoku game;
-		
 		private TreeNode[] nodes;
 		
 		private TreeNode(int length) {
@@ -83,10 +78,6 @@ public class Tini implements PlayerController, AIController {
 		@Override
 		public TreeNode clone() {
 			TreeNode node = new TreeNode(this.nodes.length);
-			node.value = this.value;
-			node.x = this.x;
-			node.y = this.y;
-			
 			node.game = this.game;
 			
 			for (int i = 0; i < node.nodes.length; i++) {
@@ -538,9 +529,6 @@ public class Tini implements PlayerController, AIController {
 		}
 		game.submitMove(this.x, this.y, key);
 		this.elapsed = (double)(System.nanoTime() - start) / 1000000000.0;
-		
-		this.node.x = this.x;
-		this.node.y = this.y;
 		
 		this.x = -1;
 		this.y = -1;
