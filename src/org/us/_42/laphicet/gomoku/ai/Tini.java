@@ -72,7 +72,7 @@ public class Tini implements PlayerController, AIController {
 		private int x;
 		private int y;
 		
-		private int winner = 0;
+		private Gomoku game;
 		
 		private TreeNode[] nodes;
 		
@@ -82,22 +82,22 @@ public class Tini implements PlayerController, AIController {
 		
 		@Override
 		public TreeNode clone() {
-			TreeNode result = new TreeNode(this.nodes.length);
-			result.value = this.value;
-			result.x = this.x;
-			result.y = this.y;
+			TreeNode node = new TreeNode(this.nodes.length);
+			node.value = this.value;
+			node.x = this.x;
+			node.y = this.y;
 			
-			result.winner = this.winner;
+			node.game = this.game;
 			
-			for (int i = 0; i < result.nodes.length; i++) {
+			for (int i = 0; i < node.nodes.length; i++) {
 				if (this.nodes[i] != null) {
-					result.nodes[i] = this.nodes[i].clone();
+					node.nodes[i] = this.nodes[i].clone();
 				}
 				else {
-					result.nodes[i] = null;
+					node.nodes[i] = null;
 				}
 			}
-			return (result);
+			return (node);
 		}
 	}
 	
@@ -106,13 +106,13 @@ public class Tini implements PlayerController, AIController {
 	/**
 	 * Creates a new instance of the Tini Gomoku AI.
 	 * 
-	 * @param nmoves The number of moves to consider at each step.
+	 * @param moves The number of moves to consider at each step.
 	 * @param depth How many turns to consider before making a decision.
 	 */
 	public Tini(int moves, int depth) {
 		this.depth = depth;
 		
-		if (moves > 1 && depth > 0) {
+		if ((moves > 1) && (depth > 0)) {
 			this.node = new TreeNode(moves);
 		}
 		else {
@@ -368,17 +368,49 @@ public class Tini implements PlayerController, AIController {
 	private Tini self = null;
 	private Tini next = null;
 	private PlayerController[] controllers = null;
+	private Gomoku[] games = null;
 	
 	/**
-	 * Generates an n-ary tree with possible outcomes for the next 'depth' amount of turns.
+	 * Evaluates a prediction against a current 'best' prediction.
+	 * 
+	 * @param node The node we're evaluating.
+	 * @param best The current best node.
+	 * @return The best node found.
 	 */
-	private void generateTree() {
-		if (this.priority <= 0 || this.node.nodes.length <= 1 || this.depth <= 0) {
+	private TreeNode evaluatePrediction(TreeNode node, TreeNode best) {
+		if (node == null) {
+			return (best);
+		}
+		
+		if (best == null) {
+			best = node;
+		}
+		else {
+			if (((node.game.getWinner() == this.value) && (best.game.getWinner() != this.value)) ||
+				((node.game.getWinner() == 0) && ((best.game.getWinner() != 0) && (best.game.getWinner() != this.value))) ||
+				(node.game.getCaptureCount(this.value) > best.game.getCaptureCount(this.value)) ||
+				(node.game.getCaptureCount((this.value % Gomoku.PLAYER_COUNT) + 1) < best.game.getCaptureCount((this.value % Gomoku.PLAYER_COUNT) + 1))) {
+				best = node;
+			}
+		}
+		
+		for (TreeNode n : node.nodes) {
+			best = this.evaluatePrediction(n, best);
+		}
+		return (best);
+	}
+	
+	/**
+	 * Generates an n-ary tree with predictions for the next 'depth' amount of turns.
+	 * Afterwards it will proceed to determine which game turned out the best and use that strategy.
+	 */
+	private void evaluatePredicitons() {
+		if ((this.moves.size() <= 1) || (this.depth <= 0) || (this.node.nodes.length <= 1)) {
 			return;
 		}
 		
 		if (this.self == null || this.next == null || this.controllers == null) {
-			this.self = new Tini(this.node.nodes.length, this.depth - 1);
+			this.self = new Tini();
 			this.next = new Tini(this.node.nodes.length, this.depth - 1);
 			this.controllers = new PlayerController[Gomoku.PLAYER_COUNT];
 			for (int i = 0; i < Gomoku.PLAYER_COUNT; i++) {
@@ -394,8 +426,12 @@ public class Tini implements PlayerController, AIController {
 			}
 		}
 		
+		if (this.games == null) {
+			this.games = new Gomoku[this.node.nodes.length];
+		}
+		
 		List<Entry<Long,Integer>> moves = new ArrayList<Entry<Long,Integer>>(this.moves.entrySet());
-		Collections.shuffle(moves);
+		Collections.shuffle(moves, this.rng);
 		moves.sort(new Comparator<Entry<Long,Integer>>() {
 			@Override
 			public int compare(Entry<Long,Integer> a, Entry<Long,Integer> b) {
@@ -403,57 +439,46 @@ public class Tini implements PlayerController, AIController {
 			}
 		});
 		
+		TreeNode best = null;
 		for (int i = 0; i < this.node.nodes.length; i++) {
 			if (moves.size() <= i) {
 				this.node.nodes[i] = null;
-				break;
+				continue;
 			}
 			
-			Gomoku game = this.game.clone(null, this.controllers);
-			this.self.gameStart(game, this.value);
-			this.next.gameStart(game, (this.value % Gomoku.PLAYER_COUNT) + 1);
+			if (this.games[i] == null) {
+				this.games[i] = this.game.clone(null, this.controllers);
+			}
+			else {
+				this.games[i].cloneOf(this.game);
+			}
+			
+			this.self.gameStart(this.games[i], this.value);
+			this.next.gameStart(this.games[i], (this.value % Gomoku.PLAYER_COUNT) + 1);
 			
 			long token = moves.get(i).getKey();
-			this.self.x = (int)(token >> 32);
-			this.self.y = (int)(token & 0xFFFFFFFF);
-			this.self.priority = -1;
-			game.next(); //Make the designated move
-			game.next(); //Branch!
-			this.node.nodes[i] = next.node.clone();
+			int x = (int)(token >> 32);
+			int y = (int)(token & 0xFFFFFFFF);
 			
-			this.self.gameEnd(game);
-			this.next.gameEnd(game);
+			this.self.x = x;
+			this.self.y = y;
+			this.self.priority = -1;
+			this.games[i].next(); //Make the designated move
+			this.games[i].next(); //Branch!
+			this.node.nodes[i] = this.next.node.clone();
+			
+			this.self.gameEnd(this.games[i]);
+			this.next.gameEnd(this.games[i]);
+			
+			TreeNode node = this.evaluatePrediction(this.node.nodes[i], best);
+			if (node != best) {
+				this.x = x;
+				this.y = y;
+				best = node;
+			}
 		}
 		
 		moves.clear();
-	}
-	
-	/**
-	 * Evaluates a tree of possible moves.
-	 * 
-	 * @param node The root node of the tree in question.
-	 */
-	private void evaluateTree(TreeNode node) {
-		if (node == null) {
-			return;
-		}
-		
-		for (TreeNode n : node.nodes) {
-			this.evaluateTree(n);
-		}
-	}
-	
-	/**
-	 * Evaluates the previously generated n-ary tree and decides on a move to make.
-	 */
-	private void evaluateTree() {
-		if (this.priority <= 0 || this.node.nodes.length <= 1 || this.depth <= 0) {
-			return;
-		}
-		
-		for (int i = 0; i < this.node.nodes.length; i++) {
-			this.evaluateTree(this.node.nodes[i]);
-		}
 	}
 	
 	@Override
@@ -487,10 +512,6 @@ public class Tini implements PlayerController, AIController {
 						break;
 					}
 				}
-				
-				this.node.value = value;
-				this.node.x = x;
-				this.node.y = y;
 			}
 		}
 	}
@@ -501,7 +522,6 @@ public class Tini implements PlayerController, AIController {
 			for (int i = 0; i < this.node.nodes.length; i++) {
 				this.node.nodes[i] = null;
 			}
-			this.node.winner = value;
 		}
 	}
 	
@@ -512,11 +532,15 @@ public class Tini implements PlayerController, AIController {
 		}
 		
 		long start = System.nanoTime();
-		this.evaluateMoves();
-		this.generateTree();
-		this.evaluateTree();
+		if (this.priority != -1) {
+			this.evaluateMoves();
+			this.evaluatePredicitons();
+		}
 		game.submitMove(this.x, this.y, key);
 		this.elapsed = (double)(System.nanoTime() - start) / 1000000000.0;
+		
+		this.node.x = this.x;
+		this.node.y = this.y;
 		
 		this.x = -1;
 		this.y = -1;
@@ -532,6 +556,7 @@ public class Tini implements PlayerController, AIController {
 		}
 		
 		this.game = game;
+		this.node.game = game;
 		this.value = value;
 		for (int y = 0; y < Gomoku.BOARD_LENGTH; y++) {
 			for (int x = 0; x < Gomoku.BOARD_LENGTH; x++) {
@@ -546,6 +571,7 @@ public class Tini implements PlayerController, AIController {
 	public void gameEnd(Gomoku game) {
 		if (this.game == game) {
 			this.game = null;
+			this.node.game = null;
 			this.tokens.clear();
 			
 			this.x = -1;
