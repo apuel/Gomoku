@@ -3,13 +3,17 @@ package org.us._42.laphicet.gomoku.ai;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.IntStream;
 
 import org.us._42.laphicet.gomoku.Gomoku;
-import org.us._42.laphicet.gomoku.Gomoku.AdjacentAlignment;
+import org.us._42.laphicet.gomoku.Gomoku.Alignment;
+//import org.us._42.laphicet.gomoku.ai.Lydeka.Play;
 import org.us._42.laphicet.gomoku.PlayerController;
 
 public class Arta implements PlayerController, AIController {
@@ -61,11 +65,10 @@ public class Arta implements PlayerController, AIController {
 		}
 		
 		private void getTotal() {
-			if (value == Arta.playerNumber) {
+			if (value == PLAYER_NUMBER) {
 				this.totalScore += this.move.score;
 			}
 			this.totalScore += this.highestScore(this.nextPlay);
-//			System.out.println("getTotal(); called, total score " + this.totalScore + " value is " + this.value);
 		}
 		
 		@Override
@@ -74,12 +77,12 @@ public class Arta implements PlayerController, AIController {
 		}
 	}
 	
-	private static int playerNumber;
-	private int enemyNumber;
-	private int[] togglePlayer = new int[Gomoku.PLAYER_COUNT];
+	private static int PLAYER_NUMBER;
+	private static int ENEMY_NUMBER;
+	private int[] playerValues = new int[Gomoku.PLAYER_COUNT];
 
+	private double[][] gameBoard = new double[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH];
 	private double[][] scoreBoard = new double[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH];
-	private List<Play> bestMoves = new ArrayList<Play>();
 	
 //	private List<Prediction> minimax = new ArrayList<Prediction>();
 	
@@ -96,6 +99,7 @@ public class Arta implements PlayerController, AIController {
 	private final int minmaxDepth;
 	
 	private double timeTaken;
+	private Random randomize = new Random();
 //	private long lastKey;
 	
 	
@@ -134,32 +138,9 @@ public class Arta implements PlayerController, AIController {
 		}
 		return (ret);
 	}
-
-	/**
-	 * Checks the surrounding pieces and calculates the weight of how effective
-	 * that piece played will be
-	 * 
-	 * Chaining a piece next to it = 1.5, blocking an enemy = 0.5
-	 * 
-	 * @param game
-	 * @param x
-	 * @param y
-	 * @param d
-	 * @return
-	 */
-//	private double checkSurrounding(Gomoku game, int x, int y) {
-//		return ( this.getScoreLeft(game, x, y, x - 1, y + 0, 0, 0, 0) +
-//				 this.getScoreDown(game, x, y, x + 0, y - 1, 0, 0, 0) +
-//				this.getScoreRight(game, x, y, x + 1, y + 0, 0, 0, 0) +
-//				   this.getScoreUp(game, x, y, x + 0, y + 1, 0, 0, 0) +
-//		     this.getScoreDownLeft(game, x, y, x - 1, y - 1, 0, 0, 0) +
-//			  this.getScoreUpRight(game, x, y, x + 1, y + 1, 0, 0, 0) +
-//			   this.getScoreUpLeft(game, x, y, x - 1, y + 1, 0, 0, 0) +
-//			this.getScoreDownRight(game, x, y, x + 1, y - 1, 0, 0, 0));
-//	}
 	
 
-	private int checkNegativeAdjacency(Gomoku game, int x, int y, int value, int chainLength, AdjacentAlignment align, int currentPiece) {
+	private int checkNegativeAdjacency(Gomoku game, int x, int y, int value, int chainLength, Alignment align, int currentPiece) {
 		for (int i = chainLength; i < 6; i++) {
 			currentPiece = game.getToken(x - (align.dx * i), y - (align.dy * i));
 			if (currentPiece != 0 || currentPiece != value) {
@@ -169,7 +150,7 @@ public class Arta implements PlayerController, AIController {
 		return (0);
 	}
 	
-	private int checkIfBlocked(Gomoku game, int x, int y, int value, int chainLength, AdjacentAlignment align, int direction) {
+	private int checkIfBlocked(Gomoku game, int x, int y, int value, int chainLength, Alignment align, int direction) {
 		int currentPiece;
 		
 //		if (align == AdjacentAlignment.HORIZONTAL) {
@@ -199,7 +180,7 @@ public class Arta implements PlayerController, AIController {
 		int blocked = 1;
 		int chainLength = 0;
 		
-		for (AdjacentAlignment chain : AdjacentAlignment.values()) { 
+		for (Alignment chain : Alignment.values()) { 
 			if (game.getToken(x - chain.dx, y - chain.dy) == value) {
 				chainLength = game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain);
 				blocked += checkIfBlocked(game, x - chain.dx, y - chain.dy, value, chainLength, chain, Arta.NEGATIVE);
@@ -230,132 +211,23 @@ public class Arta implements PlayerController, AIController {
 		return (score);
 	}
 	
-//	private double checkSurrounding(Gomoku game, int x, int y, int value) {
-//		double score = 0;
-//		double tmp = 0;
-//		
-//		/*
-//		 * player/enemyChainLength keeps track of the longer chain in a direction
-//		 * index 0 = negative, index 1 = positive
-//		 * 
-//		 * totalChainLength is used to combine both sides into one long chain
-//		 * 
-//		 * playedBlockedCount starts at 1, but represents how many pieces block
-//		 * the chain - 1
-//		 * 
-//		 * valueNegative is the current value of the piece at the negative position, while
-//		 * valuePositive is the current value of the position position, this is used
-//		 * to actually track the chains
-//		 */
-//		int playerChainLength[] = new int[2];
-//		int playerTotalChainLength = 0;
-//		int enemyChainLength[] = new int[2];
-//		int enemyTotalChainLength = 0;
-//		int playerBlockedCount = 1;
-//		int enemyBlockedCount = 1;
-//		int valueNegative = 0;
-//		int valuePositive = 0;
-//		
-//		for (AdjacentAlignment chain : AdjacentAlignment.values()) { 
-//			valueNegative = game.getToken(x - chain.dx, y - chain.dy);
-//			if (valueNegative == value) {
-//				valueNegative = value;
-//				playerChainLength[Arta.NEGATIVE] += game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain);
-////				playerBlockedCount += this.checkIfBlocked(game, x - chain.dx, y - chain.dy, value, playerChainLength[Arta.NEGATIVE], chain, 0);
-//			}
-//			else if (valueNegative > 0) {
-//				valueNegative = value;
-//				enemyChainLength[Arta.NEGATIVE] += game.getAdjacentTokenCount(x - chain.dx, y - chain.dy, chain);
-//			}
-//			
-//			valuePositive = game.getToken(x + chain.dx, y + chain.dy);
-//			if (valuePositive == value && valueNegative == valuePositive) {
-//				playerChainLength[Arta.POSITIVE] += game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain);
-//			}
-//			else if (valuePositive > 0 && valueNegative > 0 && valueNegative != valuePositive) {
-//				enemyChainLength[Arta.POSITIVE] += game.getAdjacentTokenCount(x + chain.dx, y + chain.dy, chain);
-//			}
-//			
-//			playerTotalChainLength = IntStream.of(playerChainLength).sum();
-//			enemyTotalChainLength = IntStream.of(enemyChainLength).sum();
-//			tmp += Math.pow(PLAYERCHAIN, playerTotalChainLength) / playerBlockedCount;
-//			tmp += Math.pow(ENEMYCHAIN, enemyTotalChainLength) / enemyBlockedCount;
-//			if (tmp > score) {
-//				score = tmp;
-//			}
-//			
-//			Arrays.fill(playerChainLength, 0);
-//			Arrays.fill(enemyChainLength, 0);
-//			playerBlockedCount = 1;
-//			enemyBlockedCount = 1;
-//			tmp = 0;
-//		}
-//		return (score);
-//	}
-	
-//	private double captureThreat(Gomoku game, int x, int y) {
-//		int piece = game.getToken(x, y);
-//		int tmp = 0;
-//		int score = 0;
-//		
-//		for (AdjacentAlignment enemy : AdjacentAlignment.values()) {
-//			tmp = game.getToken(x - enemy.dx, y - enemy.dy);
-//			if (tmp != piece && tmp != 0 && tmp != -1) {
-//				score += game.wouldCapture(x, y, x - enemy.dx, y - enemy.dy, piece) ? 1 : 0;
-//			}
-//			tmp = game.getToken(x + enemy.dx, y + enemy.dy);
-//			if (tmp != piece && tmp != 0 && tmp != -1) {
-//				score += game.wouldCapture(x, y, x + enemy.dx, y + enemy.dy, piece) ? 1 : 0;
-//			}			
-//		}
-//		return (Math.pow(WILLBECAPTURE, score));
-//	}
-
 	/**
-	 * Calculates the weight and score for heuristics
-	 * Captures weight (1^possible captures / 2)
+	 * Creates a copy of the current game state into gameBoard
 	 * 
-	 * @param game
-	 * @param x
-	 * @param y
-	 * @return
+	 * @param game The gomoku game to copy the state from
 	 */
-	private double calcValue(Gomoku game, int x, int y, int value) {
-		return (Math.pow(CAPTURE, game.countCaptures(x, y, Arta.playerNumber)))
-//				- this.captureThreat(game, x, y, value)
-				- (game.isInDanger(x, y, value) ? 0 : WILLBECAPTURE )
-				+ this.checkSurrounding(game, x, y, value);
-	}
-	
-	/**
-	 * This will scan the entire board and fill it with a score. It'll than move all
-	 * the info into an TreeSet of objects where score is tied to its x and y position.
-	 */
-	private void scanBoard(Gomoku game, double[][] moveBoard, int value) {
-		this.bestMoves.clear();
-//		System.out.println("Begin Score");
+	public int[][] copyMoveBoard(int[][] game) {
+		int[][] copyBoard = new int[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH];
 		for (int x = 0, y = 0; x < Gomoku.BOARD_LENGTH && y < Gomoku.BOARD_LENGTH; x++) {
-			if (moveBoard[x][y] != 0) {
-				System.out.println("MOVE BOARD " + x + " " + y);
-				this.scoreBoard[x][y] = moveBoard[x][y];
-			}
-			else if (game.getToken(x, y) == 0 && !game.createsDoubleThree(x, y, value) && !game.isCaptured(x,  y,  value)) {
-//					System.out.println("APPROVED MOVE BOARD " + x + " " + y);
-					this.scoreBoard[x][y] =  calcValue(game, x, y, value);
-			}
-			else {
-				this.scoreBoard[x][y] =  0;
-			}
-			this.bestMoves.add(new Play(this.scoreBoard[x][y], x, y));
-//			System.out.println("SCORE: " + this.scoreBoard[x][y] + " X: " + x + " Y: " + y);
+			copyBoard[x][y] = game[x][y];
 			if (x == 18) {
 				x = -1;
 				y++;
 			}
 		}
-		Collections.sort(this.bestMoves);
-//		System.out.print("End Score");
+		return (copyBoard);
 	}
+	
 	
 	/**
 	 * Returns a list of minimax moves 
@@ -369,28 +241,269 @@ public class Arta implements PlayerController, AIController {
 	 * @param playerValue
 	 * @return
 	 */
-	private List<Prediction> getMinimax(List<Prediction> minimax, Gomoku game, int amount, int maxDepth, int currentDepth, double[][] moveBoard, int playerValue) {
+	private List<Play> bestMoves = new ArrayList<Play>();
+	
+	
+	private List<Prediction> getMinimax(List<Prediction> minimax, Gomoku game, int amount, int maxDepth, int currentDepth, int[][] moveBoard, int playerValue) {
 //		Prediction finalMove = new Prediction(new Play(0, -1, -1));
-		List<double[][]> updatedBoard = new ArrayList<double[][]>();
-		
+		List<int[][]> updatedBoard = new ArrayList<int[][]>();
+		System.out.println("Minimax");
 		int i = 0;
-		for (Play move : this.bestMoves) {
-//			System.out.println(this.bestMoves.size());
-			minimax.add(new Prediction(move, togglePlayer[playerValue % 2]));
-			updatedBoard.add(moveBoard);
-			updatedBoard.get(i)[minimax.get(i).move.x][minimax.get(i).move.y] = togglePlayer[playerValue % 2];
-//			System.out.println("Depth : " + currentDepth + " Inserting Piece of X [" + minimax.get(i).move.x + "] Y [" + minimax.get(i).move.y + "] Score - " + minimax.get(i).move.score);
+		List<Play> copyMoves = new ArrayList<Play>(this.bestMoves);
+		for (Play move : copyMoves) {
+			System.out.println("Inside loop");
+			minimax.add(new Prediction(move, playerValues[playerValue % 2]));
+			updatedBoard.add(this.copyMoveBoard(moveBoard));
+			updatedBoard.get(i)[minimax.get(i).move.x][minimax.get(i).move.y] = playerValues[playerValue % 2];
+			System.out.println("Depth : " + currentDepth + " Inserting Piece of X [" + minimax.get(i).move.x + "] Y [" + minimax.get(i).move.y + "] Score - " + minimax.get(i).move.score);
 			if (++i >= amount) {
 				currentDepth++;
 				for (int j = 0; j < amount && currentDepth < maxDepth; j++) {
-//					System.out.println("Passing into scanBoard X " + minimax.get(j).move.x + " Y " + minimax.get(j).move.y);
-					this.scanBoard(game, updatedBoard.get(j), togglePlayer[playerValue % 2]);
+					System.out.println("Passing into scanBoard X " + minimax.get(j).move.x + " Y " + minimax.get(j).move.y);
+					this.scanBoard(game, updatedBoard.get(j), playerValues[playerValue % 2]);
 					this.getMinimax(minimax.get(j).nextPlay, game, amount, maxDepth, currentDepth, updatedBoard.get(j), playerValue++);
 				}
 				break; 
 			}
 		}
 		return (minimax);
+	}
+//	
+//	/**
+//	 * Calculates the weight and score for heuristics
+//	 * Captures weight (1^possible captures / 2)
+//	 * 
+//	 * @param game
+//	 * @param x
+//	 * @param y
+//	 * @return
+//	 */
+//	private double calcValue(Gomoku game, int x, int y, int value) {
+//		return (Math.pow(CAPTURE, game.countCaptures(x, y, Arta.playerNumber)))
+////				- this.captureThreat(game, x, y, value)
+//				- (game.isInDanger(x, y, value) ? 0 : WILLBECAPTURE )
+//				+ this.checkSurrounding(game, x, y, value);
+//	}
+//	
+	
+	/**
+	 * Max length to check for double three is 4
+	 * @param x
+	 * @param y
+	 * @param moveBoard
+	 * @param value
+	 * @return
+	 */
+	// AABXPOOXB
+	// ABXOPOXBA
+	// BXOOPXBAA
+	
+	// AAAXPXOOX
+	// AXOXPOXAA
+	// XOXOPXAAA
+	
+	// AAAXPOXOX
+	// AAXOPXOXA
+	// XOOXPXAAA
+	// B = block or free
+	// A = any piece
+	// O = same value
+	// P = piece places
+	
+	private static final Set<String> DOUBLETHREE_PERMUTATIONS;
+	private static final String[] BASE_TWO = {
+		"AABXPOOXB", "ABXOPOXBA", "BXOOPXBAA",
+		"AABXPOOXX", "ABXOPOXXA", "BXOOPXXAA",
+		"AAXXPOOXB", "AXXOPOXBA", "XXOOPXBAA",
+		"AAXXPOOXX", "AXXOPOXXA", "XXOOPXXAA",
+	};
+	private static final String[] BASE_THREE = {
+		"AAAXPXOOX", "AXOXPOXAA", "XOXOPXAAA",
+		"AAAXPOXOX", "AAXOPXOXA", "XOOXPXAAA"
+	};
+	
+	static {
+		HashSet<String> set = new LinkedHashSet<String>();
+		char[] values = { 'B', 'O', 'X' };
+		int[] position = { 0, 0 };
+		char[] hash = new char[9];
+		
+		for (int i = 0; i < BASE_TWO.length;) {
+			int count = 0;
+			for (int x = 0; x < 9; x++) {
+				char c = BASE_TWO[i].charAt(x);
+				if (c == 'A') {
+					hash[x] = values[position[count++]];
+				}
+				else {
+					hash[x] = c;
+				}
+			}
+			
+			if (++position[0] > 2) {
+				++position[1];
+				position[0] = 0;
+			}
+			if (position[1] > 2) {
+				position[1] = 0;
+				position[0] = 0;
+				i++;
+			}
+			set.add(new String(hash));
+		}
+		
+		int[] pos = { 0, 0, 0 };
+		for (int i = 0; i < BASE_THREE.length;) {
+			int count = 0;
+			for (int x = 0; x < 9; x++) {
+				char c = BASE_THREE[i].charAt(x);
+				if (c == 'A') {
+					hash[x] = values[pos[count++]];
+				}
+				else {
+					hash[x] = c;
+				}
+			}
+			
+			if (++pos[0] > 2) {
+				++pos[1];
+				pos[0] = 0;
+			}
+			if (pos[1] > 2) {
+				++pos[2];
+				pos[1] = 0;
+			}
+			if (pos[2] > 2) {
+				pos[2] = 0;
+				pos[1] = 0;
+				pos[0] = 0;
+				i++;
+			}
+			set.add(new String(hash));
+		}
+		
+		DOUBLETHREE_PERMUTATIONS = Collections.unmodifiableSet(set);
+	}
+	
+	// BNSAKJFDBASKJD.contains("Sstring");
+	
+	private boolean safeFromDoubleThrees(int x, int y, int[][] moveBoard, int value) {
+		int totalThrees = 0;
+		
+		for (Alignment align : Alignment.values()) {
+			char[] position = new char[9];
+			int currentPosition = 4;
+			position[currentPosition] = 'P';
+			for (int i = 1; i <  4; i++) {
+				if ((x - (align.dx * i) >= 0) && (y - (align.dy * i) >= 0) && (x + (align.dx * i) < 19) && (y + (align.dy * i) < 19) && 
+						(x + (align.dx * i) >= 0) && (y + (align.dy * i) >= 0) && (x - (align.dx * i) < 19) && (y - (align.dy * i) < 19)){
+					if (moveBoard[x - (align.dx * i)][y - (align.dy * i)] == value) {
+						position[currentPosition - i] = 'O';
+					}
+					else if(moveBoard[x - (align.dx * i)][y - (align.dy * i)] > 0 || moveBoard[x - (align.dx * i)][y - (align.dy * i)] == -1) {
+						position[currentPosition - i] = 'B';
+					}
+					else {
+						position[currentPosition - i] = 'X';
+					}
+					
+					if (moveBoard[x + (align.dx * i)][y + (align.dy * i)] == value) {
+						position[currentPosition + i] = 'O';
+					}
+					else if(moveBoard[x + (align.dx * i)][y + (align.dy * i)] > 0 || moveBoard[x + (align.dx * i)][y + (align.dy * i)] == -1) {
+						position[currentPosition + i] = 'B';
+					}
+					else {
+						position[currentPosition + i] = 'X';
+					}
+				}
+			}
+
+			totalThrees += 1;
+		}
+		return (totalThrees > 1);
+	}
+	
+	// value = 0, 0 % 2 = 0, player number
+	// is value 0 , want enemy, (value + 1) % 2 = enemy number, in this 0 + 1 % 2 = 1
+	
+	// horizontal (x - 2, x + 1) (x - 1, x + 2)
+	// vertical (y - 2, y + 1) (y - 1, y + 2)
+	// diagp (x - 2 & y - 2, x + 1 & y + 1) (x - 1 & y - 1, x + 2 & y + 2) 
+	// diagn (x - 2 & y + 2, x + 1, y - 1) (x - 1 & y + 1, x + 2, y - 2)
+	
+	private boolean safeFromCapture(int x, int y, int[][] moveBoard, int value) {
+		for (Alignment align : Alignment.values()) {
+			if (x - (align.dx * 2) >= 0 && y - (align.dy) >= 0 && x + (align.dx) < 19 && y + (align.dy * 2) < 19 && x - (align.dx) > 0 &&
+					x + (align.dx * 2) >= 0 && y + (align.dy) >= 0 && x - (align.dx) < 19 && y - (align.dy * 2) < 19 && x + (align.dx) > 0) {
+				if (moveBoard[x - (align.dx * 2)][y - (align.dy)] == this.playerValues[(value + 1) % 2] &&
+					moveBoard[x + (align.dx)][y + (align.dy * 2)] == this.playerValues[(value + 1) % 2] &&
+					moveBoard[x - (align.dx)][y - (align.dy)] == this.playerValues[(value + 1) % 2]) {
+						return (false);
+				}
+			}
+			else if (x - (align.dx) >= 0 && y - (align.dy * 2) >= 0 && x + (align.dx * 2) < 19 && y + (align.dy) < 19 && x + (align.dx * 2) > 0 &&
+					x + (align.dx) >= 0 && y + (align.dy * 2) >= 0 && x - (align.dx * 2) < 19 && y - (align.dy) < 19 && x - (align.dx * 2) > 0 
+					&& y + (align.dy * 2) < 19 && y - (align.dy * 2) < 19) {
+				if (moveBoard[x - (align.dx)][y - (align.dy * 2)] == this.playerValues[(value + 1) % 2] &&
+					moveBoard[x + (align.dx * 2)][y + (align.dy)] == this.playerValues[(value + 1) % 2] &&
+					moveBoard[x + (align.dx)][y + (align.dy)] == this.playerValues[(value + 1) % 2]) {
+						return (false);
+				}
+			}
+		}
+		return (true);
+	}
+	
+	/**
+	 * Will check to see if the piece is free, and if it is placing into a capture or a double three
+	 * @param x
+	 * @param y
+	 * @param moveBoard
+	 * @return
+	 */
+	private boolean isIllegaMove(int x, int y, int[][] moveBoard, int value) {
+		return (moveBoard[x][y] == 0 && this.safeFromCapture(x, y, moveBoard, value) && this.safeFromDoubleThrees(x, y, moveBoard, value));
+	}
+	
+	/**
+	 * This will scan the entire board of the copied state moveBoard and update a scoreboard to it.
+	 * It will also store it into a list that will be sorted and returned
+	 */
+	private List<Play> scanBoard(Gomoku game, int[][] moveBoard, int value) {
+		this.bestMoves.clear();
+		for (int x = 0, y = 0; x < Gomoku.BOARD_LENGTH && y < Gomoku.BOARD_LENGTH; x++) {
+			if (isIllegaMove(x, y, moveBoard, value)) {
+				System.out.println("Legal move " + x + " " + y);
+//				this.scoreBoard[x][y] = calcValue(game, x, y, value);
+				this.bestMoves.add(new Play(this.scoreBoard[x][y], x, y));
+			}
+			else { System.out.println("AASDASDSDSDSDASDASDASD"); }
+			if (x == 18) {
+				x = -1;
+				y++;
+			}
+		}
+		Collections.sort(this.bestMoves);
+		return (this.bestMoves);
+	}
+	
+	
+	/**
+	 * Creates a copy of the current game state into gameBoard
+	 * 
+	 * @param game The gomoku game to copy the state from
+	 */
+	public int[][] copyGameState(Gomoku game) {
+		int[][] copyBoard = new int[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH];
+		for (int x = 0, y = 0; x < Gomoku.BOARD_LENGTH && y < Gomoku.BOARD_LENGTH; x++) {
+			copyBoard[x][y] = game.getToken(x, y);
+			if (x == 18) {
+				x = -1;
+				y++;
+			}
+		}
+		return (copyBoard);
 	}
 	
 	@Override
@@ -400,20 +513,8 @@ public class Arta implements PlayerController, AIController {
 
 	@Override
 	public void report(Gomoku game, String message) {
-//		long startTime = System.nanoTime();
 		System.out.println(message);
 		System.err.println("[Arta] Tuturuu~");
-//		for (Play playMove : this.bestMoves) {
-//			if (game.getToken(playMove.x, playMove.y) == 0 &&
-//					!game.createsDoubleThree(playMove.x, playMove.y, this.playerNumber) &&
-//				!game.isCaptured(playMove.x, playMove.y, this.playerNumber))
-//			{
-//				System.out.println("\nBACKUP Move Made Score: " + playMove.score + " X: " + playMove.x + " Y: " + playMove.y);
-//				game.submitMove(playMove.x, playMove.y, this.lastKey);
-//				this.timeTaken = (double)(System.nanoTime() - startTime) / NANO;
-//				break;
-//			}
-//		}
 	}
 
 	@Override
@@ -424,26 +525,31 @@ public class Arta implements PlayerController, AIController {
 	public void informWinner(Gomoku game, int value) {
 	}
 
+	private Random rng = new Random();
 	@Override
 	public boolean getMove(Gomoku game, int value, long key) {
-//		System.out.println("Player " + this.playerNumber + " Enemy " + this.enemyNumber);
 		long startTime = System.nanoTime();
-//		this.lastKey = key;
 		if (game.getTurn() == 0) {
-			game.submitMove(9, 9, key);
-//			System.out.println("Start 0.0 9 9");
+			game.submitMove(this.randomize.nextInt(Gomoku.BOARD_LENGTH), this.randomize.nextInt(Gomoku.BOARD_LENGTH), key);
 		}
 		else {
-			this.scanBoard(game, new double[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH], 0);
+			System.out.println("Test 1");
+			this.scanBoard(game, this.copyGameState(game), PLAYER_NUMBER);
 			List<Prediction> moveToPlay = new ArrayList<Prediction>();
 			moveToPlay = this.getMinimax(new ArrayList<Prediction>(), game,
 					this.minmaxAmount, this.minmaxDepth * Gomoku.PLAYER_COUNT, 0,
-					new double[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH], 0);
+					this.copyGameState(game), 0);
+//			moveToPlay = this.getMinimax(new ArrayList<Prediction>(), game,
+//					this.minmaxAmount, this.minmaxDepth * Gomoku.PLAYER_COUNT, 0,
+//					new int[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH], 0);
+			System.out.println("Test 2");
 			List<Play> sortPlayList = new ArrayList<Play>();
 			for (Prediction sortItem : moveToPlay) {
+				System.out.println("Sorting");
 				sortItem.getTotal();
 				sortPlayList.add(new Play(sortItem.totalScore, sortItem.move.x, sortItem.move.y));
 			}
+			System.out.println("Test 3");
 			Collections.sort(sortPlayList);
 			for (Play playMove : sortPlayList) {
 				System.out.println("\nCHECKING VALUE " + key + " KEY " + playMove.score + " X: " + playMove.x + " Y: " + playMove.y);
@@ -457,23 +563,37 @@ public class Arta implements PlayerController, AIController {
 					break;
 				}
 			}
+			System.out.println("Test 4");
 		}
 		System.out.println("Test");
 		return (true);
+//		for (String a : DOUBLETHREE_PERMUTATIONS) {
+//			System.out.println(a);
+//		}
+//		while (true) {
+//			int x = rng.nextInt(Gomoku.BOARD_LENGTH);
+//			int y = rng.nextInt(Gomoku.BOARD_LENGTH);
+//			
+//			if (game.getToken(x, y) == 0) {
+//				game.submitMove(x, y, key);
+//				break;
+//			}
+//		}
+//		return (true);
 	}
 	
 	@Override
 	public void gameStart(Gomoku game, int value) {
 		if (value == 1) {
-			Arta.playerNumber = value;
-			this.enemyNumber = value + 1;
+			PLAYER_NUMBER = value;
+			ENEMY_NUMBER = value + 1;
 		}
 		else {
-			Arta.playerNumber = value;
-			this.enemyNumber = value - 1;
+			PLAYER_NUMBER = value;
+			ENEMY_NUMBER = value - 1;
 		}
-		this.togglePlayer[0] = Arta.playerNumber;
-		this.togglePlayer[1] = this.enemyNumber;
+		this.playerValues[0] = PLAYER_NUMBER;
+		this.playerValues[1] = ENEMY_NUMBER;
 	}
 	
 	@Override
