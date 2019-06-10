@@ -17,31 +17,6 @@ import org.us._42.laphicet.gomoku.Gomoku.Alignment;
 import org.us._42.laphicet.gomoku.PlayerController;
 
 public class Tini implements PlayerController, AIController {
-	/**
-	 * Used on placements that capture tokens.
-	 */
-	private static final int CAPTURE_PRIORITY = 40;
-	
-	/**
-	 * Used on placements concerned with adjacent tokens.
-	 */
-	private static final int ADJACENT_PRIORITY = 20;
-	
-	/**
-	 * Used on placements saving tokens from capture.
-	 */
-	private static final int DEFENSE_PRIORITY = 50;
-	
-	/**
-	 * Used on placements reducing the risk of a fatal follow up.
-	 */
-	private static final int LAST_DITCH_PRIORITY = 200;
-	
-	/**
-	 * Used on placements where a fatal placement has already been made.
-	 */
-	private static final int FUTILE_PRIORITY = 1000;
-	
 	private static final PlayerController NULL_CONTROLLER = new PlayerController() {
 		@Override public String name(Gomoku game, int value) { return ("(null)"); }
 		@Override public void report(Gomoku game, String message) { }
@@ -63,9 +38,6 @@ public class Tini implements PlayerController, AIController {
 	private int priority = 0;
 	
 	private double elapsed = 0.0;
-	
-	private Map<Long,Integer> moves = new HashMap<Long,Integer>();
-	private int depth;
 	
 	private static class TreeNode {
 		private Gomoku game;
@@ -94,14 +66,20 @@ public class Tini implements PlayerController, AIController {
 	
 	private TreeNode node;
 	
+	private Map<Long,Integer> moves = new HashMap<Long,Integer>();
+	private int depth;
+	private boolean minimax;
+	
 	/**
 	 * Creates a new instance of the Tini Gomoku AI.
 	 * 
 	 * @param moves The number of moves to consider at each step.
 	 * @param depth How many turns to consider before making a decision.
+	 * @param minimax Whether or not to use minimax calculations.
 	 */
-	public Tini(int moves, int depth) {
+	public Tini(int moves, int depth, boolean minimax) {
 		this.depth = depth;
+		this.minimax = minimax;
 		
 		if ((moves > 1) && (depth > 0)) {
 			this.node = new TreeNode(moves);
@@ -113,10 +91,169 @@ public class Tini implements PlayerController, AIController {
 	
 	/**
 	 * Creates a new instance of the Tini Gomoku AI.
+	 * 
+	 * @param moves The number of moves to consider at each step.
+	 * @param depth How many turns to consider before making a decision.
+	 */
+	public Tini(int moves, int depth) {
+		this(moves, depth, false);
+	}
+	
+	/**
+	 * Creates a new instance of the Tini Gomoku AI.
 	 */
 	public Tini() {
-		this(1, 0);
+		this(1, 0, false);
 	}
+	
+	/* ----------- *
+	 * Predictions *
+	 * ----------- */
+	
+	private Tini self = null;
+	private Tini next = null;
+	private PlayerController[] controllers = null;
+	private Gomoku[] games = null;
+	
+	/**
+	 * Get the number of captures made by opponents for a specified game.
+	 * 
+	 * @param game The game to query.
+	 * @return The number of captures made by opponents for a specified game.
+	 */
+	private int getOpponentCaptureCount(Gomoku game) {
+		int captures = 0;
+		for (int i = 1; i <= Gomoku.PLAYER_COUNT; i++) {
+			if (i == this.value) {
+				continue;
+			}
+			captures += game.getCaptureCount(i);
+		}
+		return (captures);
+	}
+	
+	/**
+	 * Evaluates a prediction against a current 'best' prediction.
+	 * 
+	 * @param node The node we're evaluating.
+	 * @param best The current best node.
+	 * @return The best node found.
+	 */
+	private TreeNode evaluatePrediction(TreeNode node, TreeNode best) {
+		if (node == null) {
+			return (best);
+		}
+		
+		if (best == null) {
+			best = node;
+		}
+		else {
+			if (((node.game.getWinner() == this.value) && (best.game.getWinner() != this.value)) ||
+				((node.game.getWinner() == 0) && ((best.game.getWinner() != 0) && (best.game.getWinner() != this.value))) ||
+				(node.game.getCaptureCount(this.value) > best.game.getCaptureCount(this.value)) ||
+				(this.getOpponentCaptureCount(node.game) < this.getOpponentCaptureCount(best.game))) {
+				best = node;
+			}
+		}
+		
+		for (TreeNode n : node.nodes) {
+			best = this.evaluatePrediction(n, best);
+		}
+		return (best);
+	}
+	
+	/**
+	 * Generates an n-ary tree with predictions for the next 'depth' amount of turns.
+	 * Afterwards it will proceed to determine which game turned out the best and use that strategy.
+	 * This will disregard whatever priority the move may have had before.
+	 */
+	private void evaluatePredicitons() {
+		if ((this.moves.size() <= 1) || (this.depth <= 0) || (this.node.nodes.length <= 1)) {
+			return;
+		}
+		
+		if (this.self == null || this.next == null || this.controllers == null) {
+			this.self = new Tini();
+			this.next = new Tini(this.node.nodes.length, this.depth - 1);
+			this.controllers = new PlayerController[Gomoku.PLAYER_COUNT];
+			for (int i = 0; i < Gomoku.PLAYER_COUNT; i++) {
+				if (i == (this.value - 1)) {
+					this.controllers[i] = self;
+				}
+				else if (i == (this.value % Gomoku.PLAYER_COUNT)) {
+					this.controllers[i] = next;
+				}
+				else {
+					this.controllers[i] = NULL_CONTROLLER;
+				}
+			}
+		}
+		
+		if (this.games == null) {
+			this.games = new Gomoku[this.node.nodes.length];
+		}
+		
+		List<Entry<Long,Integer>> moves = new ArrayList<Entry<Long,Integer>>(this.moves.entrySet());
+		Collections.shuffle(moves, this.rng);
+		moves.sort(new Comparator<Entry<Long,Integer>>() {
+			@Override
+			public int compare(Entry<Long,Integer> a, Entry<Long,Integer> b) {
+				return (b.getValue().compareTo(a.getValue()));
+			}
+		});
+		
+		TreeNode best = null;
+		for (int i = 0; i < this.node.nodes.length; i++) {
+			if (moves.isEmpty()) {
+				this.node.nodes[i] = null;
+				continue;
+			}
+			
+			if (this.games[i] == null) {
+				this.games[i] = this.game.clone(null, this.controllers);
+			}
+			else {
+				this.games[i].cloneOf(this.game);
+			}
+			
+			this.self.gameStart(this.games[i], this.value);
+			this.next.gameStart(this.games[i], (this.value % Gomoku.PLAYER_COUNT) + 1);
+			
+			long token;
+			if (this.minimax && (i % 2 != 0)) {
+				token = moves.remove(moves.size() - 1).getKey();
+			}
+			else {
+				token = moves.remove(0).getKey();
+			}
+			
+			int x = (int)(token >> 32);
+			int y = (int)(token & 0xFFFFFFFF);
+			
+			this.self.x = x;
+			this.self.y = y;
+			this.self.priority = -1;
+			this.games[i].next(); //Make the designated move
+			this.games[i].next(); //Branch!
+			this.node.nodes[i] = this.next.node.clone();
+			
+			this.self.gameEnd(this.games[i]);
+			this.next.gameEnd(this.games[i]);
+			
+			TreeNode node = this.evaluatePrediction(this.node.nodes[i], best);
+			if (node != best) {
+				this.x = x;
+				this.y = y;
+				best = node;
+			}
+		}
+		
+		moves.clear();
+	}
+	
+	/* ----------------- *
+	 * Move calculations *
+	 * ----------------- */
 	
 	/**
 	 * Evaluates if a placement should be made based on priority.
@@ -210,93 +347,7 @@ public class Tini implements PlayerController, AIController {
 	}
 	
 	/**
-	 * Attempts to find a suitable spot to capture a specific token from.
-	 * 
-	 * @param x The x coordinate of the token to be captured.
-	 * @param y The y coordinate of the token to be captured.
-	 * @param value The value of the token to be captured.
-	 * @param priority The base priority for the capture.
-	 */
-	private void attemptCapture(int x, int y, int value, int priority) {
-		if (!this.game.isInDanger(x, y, value)) {
-			return;
-		}
-		
-		for (Alignment alignment : Alignment.values()) {
-			int dx = alignment.dx;
-			int dy = alignment.dy;
-			
-			for (int xi = x - (dx * 2), yi = y - (dy * 2); xi != (x + (dx * 3)) || yi != (y + (dy * 3)); xi += dx, yi += dy) {
-				if ((xi != x || yi != y) && this.isFree(xi, yi, this.value) && this.game.wouldCapture(x, y, xi, yi, this.value)) {
-					int captures = this.game.countCaptures(xi, yi, this.value);
-					int p = priority + (captures * CAPTURE_PRIORITY);
-					
-					if ((this.game.getCaptureCount(this.value) + captures) >= (Gomoku.CAPTURES_TO_WIN - 2)) {
-						p += (captures * LAST_DITCH_PRIORITY);
-					}
-					
-					for (Alignment a : Alignment.values()) {
-						int adjacent = this.getUpdatedAdjacents(xi, yi, value, a);
-						int capacity = this.getAdjacentCapacity(xi, yi, value, alignment);
-						
-						if (adjacent >= (Gomoku.ADJACENT_TO_WIN - 2) && capacity >= Gomoku.ADJACENT_TO_WIN) {
-							this.evaluate(xi, yi, p + (adjacent * LAST_DITCH_PRIORITY));
-						}
-						else {
-							this.evaluate(xi, yi, p + (adjacent * ADJACENT_PRIORITY));
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	/**
-	 * Tries to find a suitable location to place a token around a specific token or its adjacent tokens.
-	 * 
-	 * @param x The x coordinate of the token in question.
-	 * @param y The y coordinate of the token in question.
-	 * @param value The value of the token in question.
-	 * @param alignment The alignment in which a set of tokens are arranged.
-	 * @param priority The base priority for the placement.
-	 */
-	private void surroundToken(int x, int y, int value, Alignment alignment, int priority) {
-		int dx = alignment.dx;
-		int dy = alignment.dy;
-		int capacity = this.getAdjacentCapacity(x, y, value, alignment);
-		
-		for (int i = 0; i < 2; i++) {
-			for (int xi = x + dx, yi = y + dy; ; xi += dx, yi += dy) {
-				int token = this.game.getToken(xi, yi);
-				if (token != value) {
-					if (this.isFree(xi, yi, this.value)) {
-						int p = priority + (this.game.countCaptures(xi, yi, this.value) * CAPTURE_PRIORITY);
-						int adjacent = this.getUpdatedAdjacents(xi, yi, value, alignment);
-						
-						if (((adjacent - 1) - this.game.getAdjacentTokenCount(x, y, alignment)) >= Gomoku.ADJACENT_TO_WIN) {
-							break;
-						}
-						
-						if ((adjacent >= (Gomoku.ADJACENT_TO_WIN - 2)) && (capacity >= Gomoku.ADJACENT_TO_WIN)) {
-							this.evaluate(xi, yi, p + (adjacent * LAST_DITCH_PRIORITY));
-						}
-						else if ((value == this.value) && this.game.isInDanger(x, y, value)) {
-							this.evaluate(xi, yi, p + (adjacent * DEFENSE_PRIORITY));
-						}
-						else if (((value == this.value) && (capacity >= Gomoku.ADJACENT_TO_WIN)) || (value != this.value)) {
-							this.evaluate(xi, yi, p + (adjacent * ADJACENT_PRIORITY));
-						}
-					}
-					break;
-				}
-			}
-			
-			dx = -dx; dy = -dy;
-		}
-	}
-	
-	/**
-	 * Evaluates a specific token on the game board and what moves can be done from its presence.
+	 * Evaluates a specific token on the game board and what placements can be made from its presence.
 	 * 
 	 * @param x The x coordinate of the token in question.
 	 * @param y The y coordinate of the token in question.
@@ -304,19 +355,45 @@ public class Tini implements PlayerController, AIController {
 	 */
 	private void evaluateToken(int x, int y, int value) {
 		for (Alignment alignment : Alignment.values()) {
-			int adjacent = this.game.getAdjacentTokenCount(x, y, alignment);
+			int dx = alignment.dx;
+			int dy = alignment.dy;
 			
-			if (value != this.value) {
-				this.attemptCapture(x, y, value, 0);
-			}
-			if (adjacent < Gomoku.ADJACENT_TO_WIN) {
-				this.surroundToken(x, y, value, alignment, 0);
+			//The most tokens of this value that could possibly fit adjacently in this alignment
+			int capacity = this.getAdjacentCapacity(x, y, value, alignment);
+			
+			for (int i = 0; i < 2; i++) {
+				for (int xi = x + dx, yi = y + dy; ; xi += dx, yi += dy) {
+					//search for the first non-'value' token
+					int token = this.game.getToken(xi, yi);
+					if (token != value) {
+						if (this.isFree(xi, yi, this.value)) {
+							//number of captures this would get us
+							int captures = this.game.countCaptures(xi, yi, this.value);
+							//number of adjacents there could be if a token of the same type was placed
+							int adjacent = this.getUpdatedAdjacents(xi, yi, value, alignment);
+							
+							//find the best number of adjacent tokens we would get by placing this token
+							int adjacents = 1;
+							for (Alignment a : Alignment.values()) {
+								int n = this.getUpdatedAdjacents(xi, yi, value, a);
+								if (n > adjacents) {
+									adjacents = n;
+								}
+							}
+							
+							//calculate priority
+						}
+						break;
+					}
+				}
+				
+				dx = -dx; dy = -dy;
 			}
 		}
 	}
 	
 	/**
-	 * Evaluates logical moves that could be made and decides on one.
+	 * Evaluates on all logical moves that could be made and decides on one based on priority.
 	 */
 	private void evaluateMoves() {
 		if (this.priority < 0) {
@@ -356,121 +433,9 @@ public class Tini implements PlayerController, AIController {
 		}
 	}
 	
-	private Tini self = null;
-	private Tini next = null;
-	private PlayerController[] controllers = null;
-	private Gomoku[] games = null;
-	
-	/**
-	 * Evaluates a prediction against a current 'best' prediction.
-	 * 
-	 * @param node The node we're evaluating.
-	 * @param best The current best node.
-	 * @return The best node found.
-	 */
-	private TreeNode evaluatePrediction(TreeNode node, TreeNode best) {
-		if (node == null) {
-			return (best);
-		}
-		
-		if (best == null) {
-			best = node;
-		}
-		else {
-			if (((node.game.getWinner() == this.value) && (best.game.getWinner() != this.value)) ||
-				((node.game.getWinner() == 0) && ((best.game.getWinner() != 0) && (best.game.getWinner() != this.value))) ||
-				(node.game.getCaptureCount(this.value) > best.game.getCaptureCount(this.value)) ||
-				(node.game.getCaptureCount((this.value % Gomoku.PLAYER_COUNT) + 1) < best.game.getCaptureCount((this.value % Gomoku.PLAYER_COUNT) + 1))) {
-				best = node;
-			}
-		}
-		
-		for (TreeNode n : node.nodes) {
-			best = this.evaluatePrediction(n, best);
-		}
-		return (best);
-	}
-	
-	/**
-	 * Generates an n-ary tree with predictions for the next 'depth' amount of turns.
-	 * Afterwards it will proceed to determine which game turned out the best and use that strategy.
-	 */
-	private void evaluatePredicitons() {
-		if ((this.moves.size() <= 1) || (this.depth <= 0) || (this.node.nodes.length <= 1)) {
-			return;
-		}
-		
-		if (this.self == null || this.next == null || this.controllers == null) {
-			this.self = new Tini();
-			this.next = new Tini(this.node.nodes.length, this.depth - 1);
-			this.controllers = new PlayerController[Gomoku.PLAYER_COUNT];
-			for (int i = 0; i < Gomoku.PLAYER_COUNT; i++) {
-				if (i == (this.value - 1)) {
-					this.controllers[i] = self;
-				}
-				else if (i == (this.value % Gomoku.PLAYER_COUNT)) {
-					this.controllers[i] = next;
-				}
-				else {
-					this.controllers[i] = NULL_CONTROLLER;
-				}
-			}
-		}
-		
-		if (this.games == null) {
-			this.games = new Gomoku[this.node.nodes.length];
-		}
-		
-		List<Entry<Long,Integer>> moves = new ArrayList<Entry<Long,Integer>>(this.moves.entrySet());
-		Collections.shuffle(moves, this.rng);
-		moves.sort(new Comparator<Entry<Long,Integer>>() {
-			@Override
-			public int compare(Entry<Long,Integer> a, Entry<Long,Integer> b) {
-				return (b.getValue().compareTo(a.getValue()));
-			}
-		});
-		
-		TreeNode best = null;
-		for (int i = 0; i < this.node.nodes.length; i++) {
-			if (moves.size() <= i) {
-				this.node.nodes[i] = null;
-				continue;
-			}
-			
-			if (this.games[i] == null) {
-				this.games[i] = this.game.clone(null, this.controllers);
-			}
-			else {
-				this.games[i].cloneOf(this.game);
-			}
-			
-			this.self.gameStart(this.games[i], this.value);
-			this.next.gameStart(this.games[i], (this.value % Gomoku.PLAYER_COUNT) + 1);
-			
-			long token = moves.get(i).getKey();
-			int x = (int)(token >> 32);
-			int y = (int)(token & 0xFFFFFFFF);
-			
-			this.self.x = x;
-			this.self.y = y;
-			this.self.priority = -1;
-			this.games[i].next(); //Make the designated move
-			this.games[i].next(); //Branch!
-			this.node.nodes[i] = this.next.node.clone();
-			
-			this.self.gameEnd(this.games[i]);
-			this.next.gameEnd(this.games[i]);
-			
-			TreeNode node = this.evaluatePrediction(this.node.nodes[i], best);
-			if (node != best) {
-				this.x = x;
-				this.y = y;
-				best = node;
-			}
-		}
-		
-		moves.clear();
-	}
+	/* ------------------ *
+	 * Overridden methods *
+	 * ------------------ */
 	
 	@Override
 	public String name(Gomoku game, int value) {
@@ -495,15 +460,6 @@ public class Tini implements PlayerController, AIController {
 		}
 		else {
 			this.tokens.add(token);
-			
-			if (value != this.value) {
-				for (Alignment alignment : Alignment.values()) {
-					if (this.game.getAdjacentTokenCount(x, y, alignment) >= Gomoku.ADJACENT_TO_WIN) {
-						this.attemptCapture(x, y, value, FUTILE_PRIORITY);
-						break;
-					}
-				}
-			}
 		}
 	}
 	
