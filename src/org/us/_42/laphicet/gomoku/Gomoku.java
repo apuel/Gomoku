@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import org.us._42.laphicet.gomoku.Gomoku.Alignment;
-
 public class Gomoku {
 	public static final int BOARD_LENGTH = 19;
 	public static final int PLAYER_COUNT = 2;
