@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import org.us._42.laphicet.gomoku.Gomoku.Alignment;
+
 public class Gomoku {
 	public static final int BOARD_LENGTH = 19;
 	public static final int PLAYER_COUNT = 2;
@@ -164,7 +166,7 @@ public class Gomoku {
 	 * @return The PlayerController.
 	 */
 	public PlayerController getPlayerController(int value) {
-		if (value > 0 && value <= PLAYER_COUNT) {
+		if ((value > 0) && (value <= PLAYER_COUNT)) {
 			return (this.players[value - 1]);
 		}
 		return (null);
@@ -195,7 +197,7 @@ public class Gomoku {
 	 * @return The number of successful captures.
 	 */
 	public int getCaptureCount(int value) {
-		if (value > 0 && value <= PLAYER_COUNT) {
+		if ((value > 0) && (value <= PLAYER_COUNT)) {
 			return (this.captures[value - 1]);
 		}
 		return (-1);
@@ -208,7 +210,7 @@ public class Gomoku {
 	 * @return The number of currently placed tokens.
 	 */
 	public int getTokensPlaced(int value) {
-		if (value > 0 && value <= PLAYER_COUNT) {
+		if ((value > 0) && (value <= PLAYER_COUNT)) {
 			return (this.placed[value - 1]);
 		}
 		return (-1);
@@ -223,7 +225,7 @@ public class Gomoku {
 	 * @return The number of tokens adjacent of a certain token, including itself.
 	 */
 	public int getAdjacentTokenCount(int x, int y, Alignment alignment) {
-		if (x < 0 || x >= BOARD_LENGTH || y < 0 || y >= BOARD_LENGTH) {
+		if ((x < 0) || (x >= BOARD_LENGTH) || (y < 0) || (y >= BOARD_LENGTH)) {
 			return (-1);
 		}
 		if (this.board[y][x] == null) {
@@ -255,7 +257,7 @@ public class Gomoku {
 	 * @return The value of the token at the given coordinates.
 	 */
 	public int getToken(int x, int y) {
-		if (x < 0 || x >= BOARD_LENGTH || y < 0 || y >= BOARD_LENGTH) {
+		if ((x < 0) || (x >= BOARD_LENGTH) || (y < 0) || (y >= BOARD_LENGTH)) {
 			return (-1);
 		}
 		if (this.board[y][x] != null) {
@@ -393,7 +395,7 @@ public class Gomoku {
 			int v1 = this.getToken(x1, y1);
 			int v2 = this.getToken(x2, y2);
 			
-			if (v1 > 0 && v1 != value && v2 > 0 && v2 != value) {
+			if ((v1 > 0) && (v1 != value) && (v2 > 0) && (v2 != value)) {
 				this.logs.add(String.format(CAPTURE_FORMAT, player.name(this, value), this.players[v1 - 1].name(this, v1), x1, y1));
 				this.logs.add(String.format(CAPTURE_FORMAT, player.name(this, value), this.players[v2 - 1].name(this, v2), x2, y2));
 				
@@ -441,7 +443,7 @@ public class Gomoku {
 	 */
 	public boolean wouldCapture(int x1, int y1, int x2, int y2, int value) {
 		int token = this.getToken(x1, y1);
-		if (token == value || token <= 0 || value <= 0 || (this.getToken(x2, y2) != 0)) {
+		if ((token == value) || (token <= 0) || (value <= 0) || (this.getToken(x2, y2) != 0)) {
 			return (false);
 		}
 		
@@ -454,7 +456,7 @@ public class Gomoku {
 			return (false);
 		}
 		
-		if (adx == 2 || ady == 2) {
+		if ((adx == 2) || (ady == 2)) {
 			dx /= 2; dy /= 2;
 			return ((this.getToken(x1 - dx, y1 - dy) == value) && (this.getToken(x1 + dx, y1 + dy) == token));
 		}
@@ -477,7 +479,7 @@ public class Gomoku {
 		if (this.getToken(x + (dx * 3), y + (dy * 3)) == value) {
 			int v1 = this.getToken(x + (dx * 1), y + (dy * 1));
 			int v2 = this.getToken(x + (dx * 2), y + (dy * 2));
-			if (v1 > 0 && v1 != value && v2 > 0 && v2 != value) {
+			if ((v1 > 0) && (v1 != value) && (v2 > 0) && (v2 != value)) {
 				return (1);
 			}
 		}
@@ -515,10 +517,10 @@ public class Gomoku {
 		int prev = this.getToken(x - dx, y - dy);
 		int next = this.getToken(x + dx, y + dy);
 		
-		if (prev == value && next != value && next > 0) {
+		if ((prev == value) && (next != value) && (next > 0)) {
 			return (this.getToken(x - (dx * 2), y - (dy * 2)) == next);
 		}
-		if (next == value && prev != value && prev > 0) {
+		if ((next == value) && (prev != value) && (prev > 0)) {
 			return (this.getToken(x + (dx * 2), y + (dy * 2)) == prev);
 		}
 		
@@ -666,17 +668,10 @@ public class Gomoku {
 	 */
 	public boolean createsDoubleThree(int x, int y, int value) {
 		int threes = 0;
-		if (this.createsFreeThree(x, y, value, +1, +0)) {
-			threes++;
-		}
-		if (this.createsFreeThree(x, y, value, +0, +1)) {
-			threes++;
-		}
-		if (this.createsFreeThree(x, y, value, +1, +1)) {
-			threes++;
-		}
-		if (this.createsFreeThree(x, y, value, +1, -1)) {
-			threes++;
+		for (Alignment alignment : Alignment.values()) {
+			if (this.createsFreeThree(x, y, value, alignment.dx, alignment.dy)) {
+				threes++;
+			}
 		}
 		return (threes >= 2);
 	}
@@ -772,7 +767,7 @@ public class Gomoku {
 			this.started = true;
 		}
 		
-		if (this.winner == 0 && !(this.abort)) {
+		if ((this.winner == 0) && !(this.abort)) {
 			PlayerController player = this.players[this.turn % PLAYER_COUNT];
 			int value = (this.turn % PLAYER_COUNT) + 1;
 			
