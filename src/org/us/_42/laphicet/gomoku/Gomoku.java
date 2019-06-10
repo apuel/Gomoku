@@ -798,7 +798,7 @@ public class Gomoku {
 			
 			this.applyCaptures(this.x, this.y, value);
 			int captures = this.captures[this.turn % PLAYER_COUNT];
-			if (this.check5 == null && captures >= CAPTURES_TO_WIN) {
+			if (captures >= CAPTURES_TO_WIN) {
 				this.winner = value;
 				this.logs.add(String.format("%s has captured %d times and won!", player.name(this, value), captures));
 			}

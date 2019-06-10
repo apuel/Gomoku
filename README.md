@@ -9,7 +9,7 @@ appendix). This rule adds a win condition : If you manage to capture ten of your
 opponent’s stones, you win the game.
 - Game-ending capture : A player that manages to align five stones only wins if the
 opponent can not break this alignment by capturing a pair, or if he has already lost
-four pairs and the opponent can capture one more, therefore winning by capture.
+nine pairs and the opponent can capture one more, therefore winning by capture.
 There is no need for the game to go on if there is no possibility of this happening.
 - No double-threes : It is forbidden to play a move that introduces two free-three
 alignments, which would guarantee a win by alignment (See the appendix)
