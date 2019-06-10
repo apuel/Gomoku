@@ -11,8 +11,8 @@ import org.us._42.laphicet.gomoku.Gomoku;
 public class Main {
 	static {
 		System.setProperty("java.awt.headless", "true");
-		if (!GraphicsEnvironment.isHeadless()) {
-			throw new RuntimeException("Application requires java.awt.headless to be true!");
+		if (!(GraphicsEnvironment.isHeadless())) {
+			throw new RuntimeException("Application must be run in headless mode!");
 		}
 	}
 	
@@ -26,15 +26,13 @@ public class Main {
 	private static void XstartOnFirstThread() {
 		try {
 			String os = System.getProperty("os.name");
-			if (!os.contains("Mac") && !os.contains("Darwin")) {
+			if (!(os.contains("Mac")) && !(os.contains("Darwin"))) {
 				return;
 			}
 			
-			String pidstring = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
-			long pid = Long.parseLong(pidstring);
-			
+			long pid = Long.parseLong(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
 			String env = System.getenv("JAVA_STARTED_ON_FIRST_THREAD_" + pid);
-			if (env != null && env.equals("1")) {
+			if ((env != null) && env.equals("1")) {
 				return;
 			}
 		}
@@ -58,11 +56,11 @@ public class Main {
 			});
 			
 			process.waitFor();
-		} catch (Exception e) {
+			System.exit(process.exitValue());
+		}
+		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		
-		System.exit(0);
 	}
 	
 	public static void main(String... args) {
@@ -74,7 +72,7 @@ public class Main {
 		Gomoku game = new Gomoku((GameStateReporter)vis, vis, vis);
 		
 		vis.start(game);
-		while (!vis.isEnded()) {
+		while (!(vis.isEnded())) {
 			game.auto();
 			vis.results(game);
 			game.reset();
