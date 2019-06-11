@@ -16,8 +16,8 @@ public class Gomoku {
 	public static enum Alignment {
 		HORIZONTAL(1, 0),
 		VERTICAL(0, 1),
-		DIAG_POSITIVE(1, 1),
-		DIAG_NEGATIVE(1, -1);
+		ASCENDING(1, 1),
+		DESCENDING(1, -1);
 		
 		public final int dx;
 		public final int dy;
@@ -583,10 +583,12 @@ public class Gomoku {
 	 * @return Whether or not the token is in danger of being captured.
 	 */
 	public boolean isInDanger(int x, int y, int value) {
-		return (this.checkDanger(x, y, value, +1, +0) ||
-				this.checkDanger(x, y, value, +0, +1) ||
-				this.checkDanger(x, y, value, +1, +1) ||
-				this.checkDanger(x, y, value, +1, -1));
+		for (Alignment alignment : Alignment.values()) {
+			if (this.checkDanger(x, y, value, alignment.dx, alignment.dy)) {
+				return (true);
+			}
+		}
+		return (false);
 	}
 	
 	/**
