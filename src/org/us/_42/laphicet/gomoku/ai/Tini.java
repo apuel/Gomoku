@@ -472,8 +472,13 @@ public class Tini implements PlayerController, AIController {
 		}
 		
 		if (this.x == -1 || this.y == -1) {
-			if (this.isFree((Gomoku.BOARD_LENGTH / 2), (Gomoku.BOARD_LENGTH / 2), this.value)) {
-				this.evaluate((Gomoku.BOARD_LENGTH / 2), (Gomoku.BOARD_LENGTH / 2), 0);
+			int origin = (Gomoku.BOARD_LENGTH / 2);
+			for (int x = -1; x <= 1; x++) {
+				for (int y = -1; y <= 1; y++) {
+					if (this.isFree(origin + x, origin + y, this.value)) {
+						this.evaluate(origin + x, origin + y, 0);
+					}
+				}
 			}
 		}
 		
