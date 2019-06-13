@@ -402,7 +402,7 @@ public class Tini implements PlayerController, AIController {
 							}
 						}
 						else if (this.game.isInDanger(x, y, value, alignment)) {
-							priority += (20 * adjacent);
+							priority += (12 * adjacent);
 						}
 					}
 					else {
