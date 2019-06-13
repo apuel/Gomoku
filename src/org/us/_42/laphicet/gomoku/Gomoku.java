@@ -619,8 +619,7 @@ public class Gomoku implements Cloneable {
 		int next = 0;
 		
 		int last = 0;
-		boolean pspaced = false;
-		boolean nspaced = false;
+		boolean spaced = false;
 		
 		for (int i = 1; ; i++) {
 			int token = this.getToken(x - (dx * i), y - (dy * i));
@@ -633,13 +632,18 @@ public class Gomoku implements Cloneable {
 			last = token;
 			
 			if (token == 0) {
-				if (!pspaced) {
-					pspaced = true;
+				if (!spaced) {
+					spaced = true;
 					continue;
 				}
 				break;
 			}
 			prev++;
+		}
+		
+		// The last previous token was the space, ignore it
+		if (last == 0) {
+			spaced = false;
 		}
 		
 		for (int i = 1; ; i++) {
@@ -653,8 +657,8 @@ public class Gomoku implements Cloneable {
 			last = token;
 			
 			if (token == 0) {
-				if (!nspaced && !pspaced) {
-					nspaced = true;
+				if (!spaced) {
+					spaced = true;
 					continue;
 				}
 				break;
