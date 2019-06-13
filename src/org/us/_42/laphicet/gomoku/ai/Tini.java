@@ -424,7 +424,12 @@ public class Tini implements PlayerController, AIController {
 							priority += 95;
 						}
 						else if (adjacent > (Gomoku.ADJACENT_TO_WIN - 2)) {
-							priority += 45;
+							if (this.game.createsFreeThree(x, y, value, alignment)) {
+								priority += 47;
+							}
+							else {
+								priority += 45;
+							}
 						}
 						else {
 							priority += (9 * adjacent);
