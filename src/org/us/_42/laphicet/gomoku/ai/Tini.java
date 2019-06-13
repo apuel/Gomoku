@@ -472,28 +472,17 @@ public class Tini implements PlayerController, AIController {
 		}
 		
 		if (this.x == -1 || this.y == -1) {
-			for (int i = 1; i < (Gomoku.BOARD_LENGTH - 1); i++) {
-				if (this.isFree(i, 0, this.value)) {
-					this.evaluate(i, 0, 0);
-				}
-				if (this.isFree(0, i, this.value)) {
-					this.evaluate(0, i, 0);
-				}
-				if (this.isFree(i, Gomoku.BOARD_LENGTH - 1, this.value)) {
-					this.evaluate(i, Gomoku.BOARD_LENGTH - 1, 0);
-				}
-				if (this.isFree(Gomoku.BOARD_LENGTH - 1, i, this.value)) {
-					this.evaluate(Gomoku.BOARD_LENGTH - 1, i, 0);
-				}
+			if (this.isFree((Gomoku.BOARD_LENGTH / 2), (Gomoku.BOARD_LENGTH / 2), this.value)) {
+				this.evaluate((Gomoku.BOARD_LENGTH / 2), (Gomoku.BOARD_LENGTH / 2), 0);
 			}
-			
-			if (this.x == -1 || this.y == -1) {
-				do {
-					this.x = this.rng.nextInt(Gomoku.BOARD_LENGTH);
-					this.y = this.rng.nextInt(Gomoku.BOARD_LENGTH);
-				}
-				while (!(this.isFree(this.x, this.y, this.value)));
+		}
+		
+		if (this.x == -1 || this.y == -1) {
+			do {
+				this.x = this.rng.nextInt(Gomoku.BOARD_LENGTH);
+				this.y = this.rng.nextInt(Gomoku.BOARD_LENGTH);
 			}
+			while (!(this.isFree(this.x, this.y, this.value)));
 		}
 	}
 	
