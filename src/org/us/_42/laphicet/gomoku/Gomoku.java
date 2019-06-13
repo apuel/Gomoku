@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-public class Gomoku {
+public class Gomoku implements Cloneable {
 	public static final int BOARD_LENGTH = 19;
 	public static final int PLAYER_COUNT = 2;
 	public static final int CAPTURES_TO_WIN = 10;
@@ -572,6 +572,19 @@ public class Gomoku {
 		}
 		
 		return (false);
+	}
+	
+	/**
+	 * Checks if a token is in danger of being captured in a certain alignment.
+	 * 
+	 * @param x The x coordinate of the token.
+	 * @param y The y coordinate of the token.
+	 * @param value The value of the token.
+	 * @param alignment The alignment to check.
+	 * @return Whether or not the token is in danger of being captured in a certain alignment.
+	 */
+	public boolean isInDanger(int x, int y, int value, Alignment alignment) {
+		return (this.checkDanger(x, y, value, alignment.dx, alignment.dy));
 	}
 	
 	/**
