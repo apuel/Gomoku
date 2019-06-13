@@ -668,7 +668,7 @@ public class Gomoku implements Cloneable {
 			ncount++;
 		}
 		
-		return ((prev + 1 + next) == 3);
+		return ((prev + 1 + next) == (ADJACENT_TO_WIN - 2));
 	}
 	
 	/**
