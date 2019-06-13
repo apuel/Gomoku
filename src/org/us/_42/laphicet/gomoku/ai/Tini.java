@@ -241,7 +241,7 @@ public class Tini implements PlayerController, AIController {
 				token = moves.remove(0).getKey();
 			}
 			
-			int x = (int)(token >> 32);
+			int x = (int)(token >>> 32);
 			int y = (int)(token & 0xFFFFFFFF);
 			
 			this.self.x = x;
@@ -465,7 +465,7 @@ public class Tini implements PlayerController, AIController {
 		}
 		
 		for (long token : this.tokens) {
-			int x = (int)(token >> 32);
+			int x = (int)(token >>> 32);
 			int y = (int)(token & 0xFFFFFFFF);
 			int value = this.game.getToken(x, y);
 			this.evaluateToken(x, y, value);
