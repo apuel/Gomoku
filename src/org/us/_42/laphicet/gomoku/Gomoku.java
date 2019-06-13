@@ -672,6 +672,19 @@ public class Gomoku implements Cloneable {
 	}
 	
 	/**
+	 * Checks for a free three created by placing a token at an alignment.
+	 * 
+	 * @param x The x coordinate of the token.
+	 * @param y The y coordinate of the token.
+	 * @param value The value of the token.
+	 * @param alignment The alignment to check for a free three at.
+	 * @return Whether or not the token would create a double three.
+	 */
+	public boolean createsFreeThree(int x, int y, int value, Alignment alignment) {
+		return (this.createsFreeThree(x, y, value, alignment.dx, alignment.dy));
+	}
+	
+	/**
 	 * Checks for double threes created by placing a token.
 	 * 
 	 * @param x The x coordinate of the token.
