@@ -116,50 +116,63 @@ public class Tini implements PlayerController, AIController {
 	private Gomoku[] games = null;
 	
 	/**
-	 * Get the number of captures made by opponents for a specified game.
+	 * Evaluates how likely we are to win if we use the strategy that built this node.
 	 * 
-	 * @param game The game to query.
-	 * @return The number of captures made by opponents for a specified game.
+	 * @param node The node we're evaluating.
+	 * @return The chance of winning.
 	 */
-	private int getOpponentCaptureCount(Gomoku game) {
-		int captures = 0;
-		for (int i = 1; i <= Gomoku.PLAYER_COUNT; i++) {
-			if (i == this.value) {
-				continue;
+	private float chanceOfWinning(TreeNode node) {
+		if (node.game.getWinner() != 0) {
+			if (node.game.getWinner() == this.value) {
+				return (100.0f);
 			}
-			captures += game.getCaptureCount(i);
+			else {
+				return (0.0f);
+			}
 		}
-		return (captures);
+		
+		float total = 0.0f;
+		int nodes = 0;
+		for (TreeNode n : node.nodes) {
+			if (n != null) {
+				total += this.chanceOfWinning(n);
+				nodes++;
+			}
+		}
+		if (nodes == 0) {
+			return (0.0f);
+		}
+		return (total / nodes);
 	}
 	
 	/**
-	 * Evaluates a prediction against a current 'best' prediction.
+	 * Evaluates how likely we are to lose if we use the strategy that built this node.
 	 * 
 	 * @param node The node we're evaluating.
-	 * @param best The current best node.
-	 * @return The best node found.
+	 * @return The chance of losing.
 	 */
-	private TreeNode evaluatePrediction(TreeNode node, TreeNode best) {
-		if (node == null) {
-			return (best);
-		}
-		
-		if (best == null) {
-			best = node;
-		}
-		else {
-			if (((node.game.getWinner() == this.value) && (best.game.getWinner() != this.value)) ||
-				((node.game.getWinner() == 0) && ((best.game.getWinner() != 0) && (best.game.getWinner() != this.value))) ||
-				(node.game.getCaptureCount(this.value) > best.game.getCaptureCount(this.value)) ||
-				(this.getOpponentCaptureCount(node.game) < this.getOpponentCaptureCount(best.game))) {
-				best = node;
+	private float chanceOfLosing(TreeNode node) {
+		if (node.game.getWinner() != 0) {
+			if (node.game.getWinner() == this.value) {
+				return (0.0f);
+			}
+			else {
+				return (100.0f);
 			}
 		}
 		
+		float total = 0.0f;
+		int nodes = 0;
 		for (TreeNode n : node.nodes) {
-			best = this.evaluatePrediction(n, best);
+			if (n != null) {
+				total += this.chanceOfLosing(n);
+				nodes++;
+			}
 		}
-		return (best);
+		if (nodes == 0) {
+			return (0.0f);
+		}
+		return (total / nodes);
 	}
 	
 	/**
@@ -202,7 +215,8 @@ public class Tini implements PlayerController, AIController {
 			}
 		});
 		
-		TreeNode best = null;
+		float winChance = -1.0f;
+		float loseChance = -1.0f;
 		for (int i = 0; i < this.node.nodes.length; i++) {
 			if (moves.isEmpty()) {
 				this.node.nodes[i] = null;
@@ -240,11 +254,16 @@ public class Tini implements PlayerController, AIController {
 			this.self.gameEnd(this.games[i]);
 			this.next.gameEnd(this.games[i]);
 			
-			TreeNode node = this.evaluatePrediction(this.node.nodes[i], best);
-			if (node != best) {
+			float wc = this.chanceOfWinning(this.node.nodes[i]);
+			float lc = this.chanceOfLosing(this.node.nodes[i]);
+			
+			if (((wc == -1.0f) && (lc == -1.0f)) ||
+				((wc > winChance) && (lc <= loseChance)) ||
+				((wc <= winChance) && (lc < loseChance))) {
 				this.x = x;
 				this.y = y;
-				best = node;
+				winChance = wc;
+				loseChance = lc;
 			}
 		}
 		
@@ -358,32 +377,72 @@ public class Tini implements PlayerController, AIController {
 			int dx = alignment.dx;
 			int dy = alignment.dy;
 			
-			//The most tokens of this value that could possibly fit adjacently in this alignment
+			// The most tokens of this value that could possibly fit adjacently in this alignment
 			int capacity = this.getAdjacentCapacity(x, y, value, alignment);
 			
 			for (int i = 0; i < 2; i++) {
-				for (int xi = x + dx, yi = y + dy; ; xi += dx, yi += dy) {
-					//search for the first non-'value' token
-					int token = this.game.getToken(xi, yi);
-					if (token != value) {
-						if (this.isFree(xi, yi, this.value)) {
-							//number of captures this would get us
-							int captures = this.game.countCaptures(xi, yi, this.value);
-							//number of adjacents there could be if a token of the same type was placed
-							int adjacent = this.getUpdatedAdjacents(xi, yi, value, alignment);
-							
-							//find the best number of adjacent tokens we would get by placing this token
-							int adjacents = 1;
-							for (Alignment a : Alignment.values()) {
-								int n = this.getUpdatedAdjacents(xi, yi, value, a);
-								if (n > adjacents) {
-									adjacents = n;
-								}
-							}
-							
-							//calculate priority
+				// Only need to check tokens directly adjacent to this one
+				if (this.isFree(x + dx, y + dy, this.value)) {
+					// Number of captures this would get us
+					int captures = this.game.countCaptures(x + dx, y + dy, this.value);
+					// Number of adjacent tokens there could be if a token of the same type was placed at this position
+					int adjacent = this.getUpdatedAdjacents(x + dx, y + dy, value, alignment);
+					
+					int priority = 0;
+					if (value == this.value) {
+						if (adjacent >= Gomoku.ADJACENT_TO_WIN) {
+							priority += 100;
 						}
-						break;
+						else if (capacity >= Gomoku.ADJACENT_TO_WIN) {
+							if (adjacent > (Gomoku.ADJACENT_TO_WIN - 2)) {
+								priority += 50;
+							}
+							else {
+								priority += (10 * adjacent);
+							}
+						}
+						else if (this.game.isInDanger(x, y, value, alignment)) {
+							priority += (20 * adjacent);
+						}
+					}
+					else {
+						boolean threat = false;
+						for (Alignment a: Alignment.values()) {
+							int count = this.game.getAdjacentTokenCount(x, y, a);
+							if (count >= Gomoku.ADJACENT_TO_WIN) {
+								threat = true;
+								break;
+							}
+						}
+						
+						if (threat) {
+							if (this.game.isInDanger(x, y, value, alignment)) {
+								priority += 100;
+							}
+						}
+						else if (adjacent >= Gomoku.ADJACENT_TO_WIN) {
+							priority += 95;
+						}
+						else if (adjacent > (Gomoku.ADJACENT_TO_WIN - 2)) {
+							priority += 45;
+						}
+						else {
+							priority += (9 * adjacent);
+						}
+					}
+					
+					// Only prioritize capturing if it earns us a win
+					if ((captures + this.game.getCaptureCount(this.value)) >= Gomoku.CAPTURES_TO_WIN) {
+						priority += 100;
+					}
+					
+					// Only go for captures if there's nothing better to do
+					if (priority == 0) {
+						priority += (5 * captures);
+					}
+					
+					if (priority > 0) {
+						this.evaluate(x + dx, y + dy, priority);
 					}
 				}
 				
