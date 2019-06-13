@@ -618,54 +618,48 @@ public class Gomoku implements Cloneable {
 		int prev = 0;
 		int next = 0;
 		
+		int last = 0;
 		boolean pspaced = false;
-		int pcount = 0;
+		boolean nspaced = false;
+		
 		for (int i = 1; ; i++) {
 			int token = this.getToken(x - (dx * i), y - (dy * i));
 			if (((token != 0) && (token != value)) || ((token == 0) && this.isCaptured(x + (dx * i), y + (dy * i), value))) {
-				if (!pspaced) {
+				if ((i == 1) || (last != 0)) {
 					return (false);
 				}
 				break;
 			}
+			last = token;
+			
 			if (token == 0) {
 				if (!pspaced) {
 					pspaced = true;
-					prev = pcount;
 					continue;
 				}
-				if (prev == pcount) {
-					pspaced = false;
-				}
-				prev = pcount;
 				break;
 			}
-			pcount++;
-		}
-		if (prev != pcount) {
-			pspaced = false;
+			prev++;
 		}
 		
-		boolean nspaced = false;
-		int ncount = 0;
 		for (int i = 1; ; i++) {
 			int token = this.getToken(x + (dx * i), y + (dy * i));
 			if (((token != 0) && (token != value)) || ((token == 0) && this.isCaptured(x + (dx * i), y + (dy * i), value))) {
-				if (!nspaced) {
+				if ((i == 1) || (last != 0)) {
 					return (false);
 				}
 				break;
 			}
+			last = token;
+			
 			if (token == 0) {
 				if (!nspaced && !pspaced) {
 					nspaced = true;
-					next = ncount;
 					continue;
 				}
-				prev = pcount;
 				break;
 			}
-			ncount++;
+			next++;
 		}
 		
 		return ((prev + 1 + next) == (ADJACENT_TO_WIN - 2));
