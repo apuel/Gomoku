@@ -41,7 +41,7 @@ public class Arta implements PlayerController, AIController {
 	/**
 	 * Used to hold the current score and go further in to see what the best moves may be
 	 */
-	private static class Prediction implements Comparable<Prediction> {
+	private class Prediction implements Comparable<Prediction> {
 		private Play move;
 		private double totalScore;
 		private List<Prediction> nextPlay = new ArrayList<Prediction>();
@@ -65,7 +65,7 @@ public class Arta implements PlayerController, AIController {
 		}
 		
 		private void getTotal() {
-			if (value == PLAYER_NUMBER) {
+			if (value == playerNumber) {
 				this.totalScore += this.move.score;
 			}
 			this.totalScore += this.highestScore(this.nextPlay);
@@ -77,8 +77,8 @@ public class Arta implements PlayerController, AIController {
 		}
 	}
 	
-	private static int PLAYER_NUMBER;
-	private static int ENEMY_NUMBER;
+	private int playerNumber;
+	private int enemyNumber;
 	private int[] playerValues = new int[Gomoku.PLAYER_COUNT];
 
 	private double[][] gameBoard = new double[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH];
@@ -250,7 +250,7 @@ public class Arta implements PlayerController, AIController {
 		System.out.println("Minimax");
 		int i = 0;
 		List<Play> copyMoves = new ArrayList<Play>(this.bestMoves);
-		for (Play move : copyMoves) {
+		for (Play move : this.bestMoves) {
 			System.out.println("Inside loop");
 			minimax.add(new Prediction(move, playerValues[playerValue % 2]));
 			updatedBoard.add(this.copyMoveBoard(moveBoard));
@@ -268,23 +268,23 @@ public class Arta implements PlayerController, AIController {
 		}
 		return (minimax);
 	}
-//	
-//	/**
-//	 * Calculates the weight and score for heuristics
-//	 * Captures weight (1^possible captures / 2)
-//	 * 
-//	 * @param game
-//	 * @param x
-//	 * @param y
-//	 * @return
-//	 */
-//	private double calcValue(Gomoku game, int x, int y, int value) {
-//		return (Math.pow(CAPTURE, game.countCaptures(x, y, Arta.playerNumber)))
-////				- this.captureThreat(game, x, y, value)
-//				- (game.isInDanger(x, y, value) ? 0 : WILLBECAPTURE )
-//				+ this.checkSurrounding(game, x, y, value);
-//	}
-//	
+
+	/**
+	 * Calculates the weight and score for heuristics
+	 * Captures weight (1^possible captures / 2)
+	 * 
+	 * @param game
+	 * @param x
+	 * @param y
+	 * @return
+	 */
+	private double calcValue(Gomoku game, int x, int y, int value) {
+		return (Math.pow(CAPTURE, game.countCaptures(x, y, this.playerNumber)))
+//				- this.captureThreat(game, x, y, value)
+				- (game.isInDanger(x, y, value) ? 0 : WILLBECAPTURE )
+				+ this.checkSurrounding(game, x, y, value);
+	}
+	
 	
 	/**
 	 * Max length to check for double three is 4
@@ -475,7 +475,7 @@ public class Arta implements PlayerController, AIController {
 		for (int x = 0, y = 0; x < Gomoku.BOARD_LENGTH && y < Gomoku.BOARD_LENGTH; x++) {
 			if (isIllegaMove(x, y, moveBoard, value)) {
 				System.out.println("Legal move " + x + " " + y);
-//				this.scoreBoard[x][y] = calcValue(game, x, y, value);
+				this.scoreBoard[x][y] = calcValue(game, x, y, value);
 				this.bestMoves.add(new Play(this.scoreBoard[x][y], x, y));
 			}
 			else { System.out.println("AASDASDSDSDSDASDASDASD"); }
@@ -534,7 +534,7 @@ public class Arta implements PlayerController, AIController {
 		}
 		else {
 			System.out.println("Test 1");
-			this.scanBoard(game, this.copyGameState(game), PLAYER_NUMBER);
+			this.scanBoard(game, this.copyGameState(game), playerNumber);
 			List<Prediction> moveToPlay = new ArrayList<Prediction>();
 			moveToPlay = this.getMinimax(new ArrayList<Prediction>(), game,
 					this.minmaxAmount, this.minmaxDepth * Gomoku.PLAYER_COUNT, 0,
@@ -585,15 +585,15 @@ public class Arta implements PlayerController, AIController {
 	@Override
 	public void gameStart(Gomoku game, int value) {
 		if (value == 1) {
-			PLAYER_NUMBER = value;
-			ENEMY_NUMBER = value + 1;
+			playerNumber = value;
+			enemyNumber = value + 1;
 		}
 		else {
-			PLAYER_NUMBER = value;
-			ENEMY_NUMBER = value - 1;
+			playerNumber = value;
+			enemyNumber = value - 1;
 		}
-		this.playerValues[0] = PLAYER_NUMBER;
-		this.playerValues[1] = ENEMY_NUMBER;
+		this.playerValues[0] = playerNumber;
+		this.playerValues[1] = enemyNumber;
 	}
 	
 	@Override
