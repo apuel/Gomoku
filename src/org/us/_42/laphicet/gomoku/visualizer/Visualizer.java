@@ -383,10 +383,10 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		else {
 			p1user = this;
 		}
-		if (this.playerPiece[0] == 103) {
+		if (this.playerPiece[1] == 103) {
 			p2user = new Arta(3, 3);
 		}
-		else if (this.playerPiece[0] == 104) {
+		else if (this.playerPiece[1] == 104) {
 			p2user = new Tini(3, 3);
 		}
 		else {
