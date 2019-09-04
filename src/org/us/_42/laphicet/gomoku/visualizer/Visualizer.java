@@ -6,6 +6,8 @@ import org.us._42.laphicet.gomoku.Gomoku;
 import org.us._42.laphicet.gomoku.GameStateReporter;
 import org.us._42.laphicet.gomoku.PlayerController;
 import org.us._42.laphicet.gomoku.ai.AIController;
+import org.us._42.laphicet.gomoku.ai.Arta;
+import org.us._42.laphicet.gomoku.ai.Tini;
 import org.lwjgl.BufferUtils;
 
 import static org.lwjgl.glfw.Callbacks.*;
@@ -39,7 +41,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private static final int TEXTURE_OFFSET = (128 / 5);
 	private static final int BG_OFFSET_X = (BOARD_WIDTH - (BOARD_SPACE * 2)) / 2;
 	private static final int BG_OFFSET_Y = ((BOARD_WIDTH + BOARD_OFFSET) - (BOARD_SPACE * 2)) / 2;
-	private static final int CHAR_COUNT = 8;
+	private static final int CHAR_COUNT = 10;
     private static final int REPORT_SIZE = 10;
 	private static final int DEBUG_SIZE = 65;
 	
@@ -53,10 +55,11 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	private int[] playerPiece = new int[Gomoku.PLAYER_COUNT];
 	
 	private int currentPlayerPickingChar = 0;
-	private boolean[] availableChar = new boolean[8];
+	private boolean[] availableChar = new boolean[10];
 	private static final String[] PIECENAME = new String[] {
 			"Victini", "Claydol", "Slowpoke", "Cyndaquil", 
-			"Flareon", "Porygon2", "Paras", "Charmander" };
+			"Flareon", "Porygon2", "Paras", "Charmander",
+			"Elgyem AI", "Beheeyem AI" };
 	
 	private boolean toggleDebug;
 	private boolean debugPressed;
@@ -224,10 +227,24 @@ public class Visualizer implements PlayerController, GameStateReporter {
      * Draws the initial visualizer state and initializes token textures.
      */
 	private void loadCharacters() {
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < 10; i++) {
 			this.textures[i] = Renderer.initTexture(this.images[i], 0, 0, this.images[i].getWidth(), this.images[i].getHeight(), false);
 		}
 		this.backgroundTexture = Renderer.initTexture(this.bgBuffer, 0, 0, this.bgBuffer.getWidth(), this.bgBuffer.getHeight(), false);
+	}
+	
+	
+	/**
+	 * Renders a selected character has half
+	 * 
+	 * @param x X value of image to be rendered
+	 * @param y Y value of image to be rendered
+	 * @param value Value of rendered character
+	 */
+	private void renderSelectedChar(int x, int y, int value) {
+		glColor3f(0.5f, 0.5f, 0.5f);
+		Renderer.renderTexture(this.textures[value], x, y, TEXTURE_OFFSET, TEXTURE_OFFSET);
+		glColor3f(1.0f, 1.0f, 1.0f);
 	}
 	
 	/**
@@ -241,11 +258,34 @@ public class Visualizer implements PlayerController, GameStateReporter {
 				for (int i = 0, x = 220, y = 650; i < 8; i++, x+= 80) {
 					Renderer.renderTexture(this.textures[i], x, y, TEXTURE_OFFSET, TEXTURE_OFFSET);
 				}
+				this.textutil.drawString("Normal", 440, 470, 1, new Float[]{ 0.5f, 0.5f, 1.0f});
+				this.textutil.drawString("Hard", 528, 470, 1, new Float[]{ 1.0f, 0.3f, 0.0f});
+				Renderer.renderTexture(this.textures[8], 460, 500, TEXTURE_OFFSET, TEXTURE_OFFSET);
+				Renderer.renderTexture(this.textures[9], 540, 500, TEXTURE_OFFSET, TEXTURE_OFFSET);
 			}
 			else {
 				this.textutil.drawString("Select Player 2", BOARD_WIDTH / 2 - 180, BOARD_WIDTH - 150, 3, new Float[]{ 0.0f, 1.0f, 0.0f});
 				for (int i = 0, x = 220, y = 650; i < 8; i++, x+= 80) {
-					Renderer.renderTexture(this.textures[i], x, y, TEXTURE_OFFSET, TEXTURE_OFFSET);
+					if (!this.availableChar[i]) {
+						Renderer.renderTexture(this.textures[i], x, y, TEXTURE_OFFSET, TEXTURE_OFFSET);
+					} 
+					else {
+						this.renderSelectedChar(x, y, i);
+					}
+				}
+				if (!this.availableChar[8]) {
+					this.textutil.drawString("Normal", 440, 470, 1, new Float[]{ 0.5f, 0.5f, 1.0f});
+					Renderer.renderTexture(this.textures[8], 460, 500, TEXTURE_OFFSET, TEXTURE_OFFSET);
+				}
+				else {
+					this.renderSelectedChar(460, 500, 8);
+				}
+				if (!this.availableChar[9]) {
+					this.textutil.drawString("Hard", 528, 470, 1, new Float[]{ 1.0f, 0.3f, 0.0f});
+					Renderer.renderTexture(this.textures[9], 540, 500, TEXTURE_OFFSET, TEXTURE_OFFSET);
+				}
+				else {
+					this.renderSelectedChar(540, 500, 9);
 				}
 			}
         	glfwSwapBuffers(this.window);
@@ -258,6 +298,20 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	}
 	
 	/**
+	 * Selects and assigns the character and texture per what is selected by click
+	 * 
+	 * @param value The specific character value they picked
+	 */
+	private void pickCharSelection(int value) {
+		this.playerPiece[this.currentPlayerPickingChar] = this.textures[value];
+		if (this.playerNames[this.currentPlayerPickingChar] == null) {
+			this.playerNames[this.currentPlayerPickingChar] = PIECENAME[value];
+		}
+		this.availableChar[value] = true;
+		this.currentPlayerPickingChar++;
+	}
+	
+	/**
 	 * Allows users to identify what they pick
 	 * x and y allows us to identify which piece they picked based off the location
 	 * 
@@ -266,14 +320,15 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	 */
 	private void pickChar(double x, double y) {
 		for (int i = 0, x1 = 200, x2 = 240; i < 8; i++, x1+= 80, x2 += 80) {
-			if (x >= x1 && x <= x2 && y >= 630 && y < 670 && !availableChar[i]) {
-				this.playerPiece[currentPlayerPickingChar] = this.textures[i];
-				if (this.playerNames[currentPlayerPickingChar] == null) {
-					this.playerNames[currentPlayerPickingChar] = PIECENAME[i];
-				}
-				availableChar[i] = true;
-				currentPlayerPickingChar++;
+			if (x >= x1 && x <= x2 && y >= 630 && y < 670 && !this.availableChar[i]) {
+				this.pickCharSelection(i);
 			}
+		}
+		if (x >= 440 && x <= 480 && y >= 780 && y <= 820 && !this.availableChar[8]) {
+			this.pickCharSelection(8);
+		}
+		if (x >= 520 && x <= 560 && y >= 780 && y <= 820 && !this.availableChar[9]) {
+			this.pickCharSelection(9);
 		}
 	}
 	
@@ -286,13 +341,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 	/**
 	 * Initialize and display the visualizer window and its initial states.
 	 */
-	public void start(Gomoku game) {
-		for (int i = 0; i < Gomoku.PLAYER_COUNT; i++) {
-			PlayerController player = game.getPlayerController(i + 1);
-			if (player != this) {
-				this.playerNames[i] = player.name(game, i + 1);
-			}
-		}
+	public Gomoku start() {
 		
 		this.init();
 		try {
@@ -304,6 +353,8 @@ public class Visualizer implements PlayerController, GameStateReporter {
 			this.images[5] = Renderer.getBufferedImage("./img/porygon2.png");
 			this.images[6] = Renderer.getBufferedImage("./img/paras.png");
 			this.images[7] = Renderer.getBufferedImage("./img/charmander.png");
+			this.images[8] = Renderer.getBufferedImage("./img/elgyem.png");
+			this.images[9] = Renderer.getBufferedImage("./img/beheeyem.png");
 			this.bgBuffer = Renderer.getBufferedImage("./img/field.png");
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -315,7 +366,45 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		this.loadCharacters();
 		this.charSelect();
 		
+		
+		// 103 104 is normal hard
+		System.out.println("Player info " + this.playerPiece[0] +  " " + this.playerPiece[1]);
+		
+		// PlayerController
+		
+		PlayerController p1user;
+		PlayerController p2user;
+		if (this.playerPiece[0] == 103) {
+			p1user = new Arta(3, 3);
+		}
+		else if (this.playerPiece[0] == 104) {
+			p1user = new Tini(3, 3);
+		}
+		else {
+			p1user = this;
+		}
+		if (this.playerPiece[0] == 103) {
+			p2user = new Arta(3, 3);
+		}
+		else if (this.playerPiece[0] == 104) {
+			p2user = new Tini(3, 3);
+		}
+		else {
+			p2user = this;
+		}
+		
+		Gomoku game = new Gomoku((GameStateReporter)this, p1user, p2user);
+		
+		for (int i = 0; i < Gomoku.PLAYER_COUNT; i++) {
+			PlayerController player = game.getPlayerController(i + 1);
+			if (player != this) {
+				this.playerNames[i] = player.name(game, i + 1);
+			}
+		}
+		
 		this.updateBoard(game);
+		
+		return (game);
 	}
 	
 	/**

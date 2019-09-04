@@ -87,9 +87,9 @@ public class Arta implements PlayerController, AIController {
 //	private List<Prediction> minimax = new ArrayList<Prediction>();
 	
 	private static final double PLAYERCHAIN = 2.0;
-	private static final double ENEMYCHAIN = 3.5;
-	private static final double CAPTURE = 2.5;
-	private static final double WILLBECAPTURE = 25.0;
+	private static final double ENEMYCHAIN = 5.0;
+	private static final double CAPTURE = 3.0;
+	private static final double WILLBECAPTURE = 5.0;
 	private static final double NANO = 1000000000.0;
 	
 	private static final int NEGATIVE = 0;
@@ -137,6 +137,16 @@ public class Arta implements PlayerController, AIController {
 			ret += game.getToken(x - 1, y + 1) == value ? 1 : 0;
 		}
 		return (ret);
+	}
+	
+	private int enemyChain(Gomoku game, int x, int y, int value) {
+		int enemyChainLength = 0;
+		int enemyChainValue = 0;
+		for (int i = 0; i < 4; i++) {
+			enemyChainLength = this.checkChain(game, x, enemyChainLength, value, i);
+			enemyChainValue = enemyChainValue > enemyChainLength ? enemyChainValue : enemyChainLength;
+		}
+		return (enemyChainValue);
 	}
 	
 
@@ -201,7 +211,8 @@ public class Arta implements PlayerController, AIController {
 				blocked += checkIfBlocked(game, x + chain.dx, y + chain.dy, value, chainLength, chain, Arta.POSITIVE);
 				tmp += Math.pow(ENEMYCHAIN, chainLength);
 			}
-			tmp /= blocked;
+//			tmp /= blocked;
+			tmp -= blocked;
 			if (tmp > score) {
 				score = tmp;
 			}
@@ -250,7 +261,7 @@ public class Arta implements PlayerController, AIController {
 		System.out.println("Minimax");
 		int i = 0;
 		List<Play> copyMoves = new ArrayList<Play>(this.bestMoves);
-		for (Play move : this.bestMoves) {
+		for (Play move : copyMoves) {
 			System.out.println("Inside loop");
 			minimax.add(new Prediction(move, playerValues[playerValue % 2]));
 			updatedBoard.add(this.copyMoveBoard(moveBoard));
@@ -281,6 +292,7 @@ public class Arta implements PlayerController, AIController {
 	private double calcValue(Gomoku game, int x, int y, int value) {
 		return (Math.pow(CAPTURE, game.countCaptures(x, y, this.playerNumber)))
 //				- this.captureThreat(game, x, y, value)
+				+ (Math.pow(2.5, this.enemyChain(game, x, y, value)))
 				- (game.isInDanger(x, y, value) ? 0 : WILLBECAPTURE )
 				+ this.checkSurrounding(game, x, y, value);
 	}
@@ -435,7 +447,8 @@ public class Arta implements PlayerController, AIController {
 	private boolean safeFromCapture(int x, int y, int[][] moveBoard, int value) {
 		for (Alignment align : Alignment.values()) {
 			if (x - (align.dx * 2) >= 0 && y - (align.dy) >= 0 && x + (align.dx) < 19 && y + (align.dy * 2) < 19 && x - (align.dx) > 0 &&
-					x + (align.dx * 2) >= 0 && y + (align.dy) >= 0 && x - (align.dx) < 19 && y - (align.dy * 2) < 19 && x + (align.dx) > 0) {
+					x + (align.dx * 2) >= 0 && y + (align.dy) >= 0 && x - (align.dx) < 19 && y - (align.dy * 2) < 19 && x + (align.dx) > 0 &&
+					y + (align.dy * 2) >= 0) {
 				if (moveBoard[x - (align.dx * 2)][y - (align.dy)] == this.playerValues[(value + 1) % 2] &&
 					moveBoard[x + (align.dx)][y + (align.dy * 2)] == this.playerValues[(value + 1) % 2] &&
 					moveBoard[x - (align.dx)][y - (align.dy)] == this.playerValues[(value + 1) % 2]) {
@@ -525,7 +538,7 @@ public class Arta implements PlayerController, AIController {
 	public void informWinner(Gomoku game, int value) {
 	}
 
-	private Random rng = new Random();
+//	private Random rng = new Random();
 	@Override
 	public boolean getMove(Gomoku game, int value, long key) {
 		long startTime = System.nanoTime();
