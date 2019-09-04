@@ -258,19 +258,19 @@ public class Arta implements PlayerController, AIController {
 	private List<Prediction> getMinimax(List<Prediction> minimax, Gomoku game, int amount, int maxDepth, int currentDepth, int[][] moveBoard, int playerValue) {
 //		Prediction finalMove = new Prediction(new Play(0, -1, -1));
 		List<int[][]> updatedBoard = new ArrayList<int[][]>();
-		System.out.println("Minimax");
+		//System.out.println("Minimax");
 		int i = 0;
 		List<Play> copyMoves = new ArrayList<Play>(this.bestMoves);
 		for (Play move : copyMoves) {
-			System.out.println("Inside loop");
+			//System.out.println("Inside loop");
 			minimax.add(new Prediction(move, playerValues[playerValue % 2]));
 			updatedBoard.add(this.copyMoveBoard(moveBoard));
 			updatedBoard.get(i)[minimax.get(i).move.x][minimax.get(i).move.y] = playerValues[playerValue % 2];
-			System.out.println("Depth : " + currentDepth + " Inserting Piece of X [" + minimax.get(i).move.x + "] Y [" + minimax.get(i).move.y + "] Score - " + minimax.get(i).move.score);
+			//System.out.println("Depth : " + currentDepth + " Inserting Piece of X [" + minimax.get(i).move.x + "] Y [" + minimax.get(i).move.y + "] Score - " + minimax.get(i).move.score);
 			if (++i >= amount) {
 				currentDepth++;
 				for (int j = 0; j < amount && currentDepth < maxDepth; j++) {
-					System.out.println("Passing into scanBoard X " + minimax.get(j).move.x + " Y " + minimax.get(j).move.y);
+					//System.out.println("Passing into scanBoard X " + minimax.get(j).move.x + " Y " + minimax.get(j).move.y);
 					this.scanBoard(game, updatedBoard.get(j), playerValues[playerValue % 2]);
 					this.getMinimax(minimax.get(j).nextPlay, game, amount, maxDepth, currentDepth, updatedBoard.get(j), playerValue++);
 				}
@@ -487,11 +487,11 @@ public class Arta implements PlayerController, AIController {
 		this.bestMoves.clear();
 		for (int x = 0, y = 0; x < Gomoku.BOARD_LENGTH && y < Gomoku.BOARD_LENGTH; x++) {
 			if (isIllegaMove(x, y, moveBoard, value)) {
-				System.out.println("Legal move " + x + " " + y);
+				////System.out.println("Legal move " + x + " " + y);
 				this.scoreBoard[x][y] = calcValue(game, x, y, value);
 				this.bestMoves.add(new Play(this.scoreBoard[x][y], x, y));
 			}
-			else { System.out.println("AASDASDSDSDSDASDASDASD"); }
+		//	else { //System.out.println("AASDASDSDSDSDASDASDASD"); }
 			if (x == 18) {
 				x = -1;
 				y++;
@@ -526,7 +526,7 @@ public class Arta implements PlayerController, AIController {
 
 	@Override
 	public void report(Gomoku game, String message) {
-		System.out.println(message);
+		//System.out.println(message);
 		System.err.println("[Arta] Tuturuu~");
 	}
 
@@ -546,7 +546,7 @@ public class Arta implements PlayerController, AIController {
 			game.submitMove(this.randomize.nextInt(Gomoku.BOARD_LENGTH), this.randomize.nextInt(Gomoku.BOARD_LENGTH), key);
 		}
 		else {
-			System.out.println("Test 1");
+		//	//System.out.println("Test 1");
 			this.scanBoard(game, this.copyGameState(game), playerNumber);
 			List<Prediction> moveToPlay = new ArrayList<Prediction>();
 			moveToPlay = this.getMinimax(new ArrayList<Prediction>(), game,
@@ -555,33 +555,33 @@ public class Arta implements PlayerController, AIController {
 //			moveToPlay = this.getMinimax(new ArrayList<Prediction>(), game,
 //					this.minmaxAmount, this.minmaxDepth * Gomoku.PLAYER_COUNT, 0,
 //					new int[Gomoku.BOARD_LENGTH][Gomoku.BOARD_LENGTH], 0);
-			System.out.println("Test 2");
+		//	//System.out.println("Test 2");
 			List<Play> sortPlayList = new ArrayList<Play>();
 			for (Prediction sortItem : moveToPlay) {
-				System.out.println("Sorting");
+				////System.out.println("Sorting");
 				sortItem.getTotal();
 				sortPlayList.add(new Play(sortItem.totalScore, sortItem.move.x, sortItem.move.y));
 			}
-			System.out.println("Test 3");
+		//	//System.out.println("Test 3");
 			Collections.sort(sortPlayList);
 			for (Play playMove : sortPlayList) {
-				System.out.println("\nCHECKING VALUE " + key + " KEY " + playMove.score + " X: " + playMove.x + " Y: " + playMove.y);
+				////System.out.println("\nCHECKING VALUE " + key + " KEY " + playMove.score + " X: " + playMove.x + " Y: " + playMove.y);
 				if (game.getToken(playMove.x, playMove.y) == 0 &&
 						!game.createsDoubleThree(playMove.x, playMove.y, value) &&
 					!game.isCaptured(playMove.x, playMove.y, value))
 				{
-					System.out.println("\nMove Made Score: " + key + " KEY " + playMove.score + " X: " + playMove.x + " Y: " + playMove.y);
+					////System.out.println("\nMove Made Score: " + key + " KEY " + playMove.score + " X: " + playMove.x + " Y: " + playMove.y);
 					game.submitMove(playMove.x, playMove.y, key);
 					this.timeTaken = (double)(System.nanoTime() - startTime) / NANO;
 					break;
 				}
 			}
-			System.out.println("Test 4");
+	//		//System.out.println("Test 4");
 		}
-		System.out.println("Test");
+	//	//System.out.println("Test");
 		return (true);
 //		for (String a : DOUBLETHREE_PERMUTATIONS) {
-//			System.out.println(a);
+//			//System.out.println(a);
 //		}
 //		while (true) {
 //			int x = rng.nextInt(Gomoku.BOARD_LENGTH);

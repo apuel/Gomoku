@@ -375,7 +375,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 		PlayerController p1user;
 		PlayerController p2user;
 		if (this.playerPiece[0] == 103) {
-			p1user = new Arta(3, 3);
+			p1user = new Arta(4, 3);
 		}
 		else if (this.playerPiece[0] == 104) {
 			p1user = new Tini(3, 3);
@@ -384,7 +384,7 @@ public class Visualizer implements PlayerController, GameStateReporter {
 			p1user = this;
 		}
 		if (this.playerPiece[1] == 103) {
-			p2user = new Arta(3, 3);
+			p2user = new Arta(4, 3);
 		}
 		else if (this.playerPiece[1] == 104) {
 			p2user = new Tini(3, 3);
